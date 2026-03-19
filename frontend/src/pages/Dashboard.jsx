@@ -261,6 +261,29 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+         {/* My Capture Link */}
+         <div className="border border-white/10 rounded-xl p-6 mb-6">
+          <h2 className="text-lg font-semibold mb-2">🔗 Your Lead Capture Link</h2>
+             <p className="text-white/40 text-sm mb-3">
+              Share this link to automatically capture leads into your CRM.
+            </p>
+          <div className="flex items-center gap-3">
+          <div className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white/60 text-sm truncate">
+             {window.location.origin}/capture/{stats?.user?.email?.split("@")[0]}
+          </div>
+          <button
+            onClick={() => {
+            navigator.clipboard.writeText(
+            `${window.location.origin}/capture/${stats?.user?.email?.split("@")[0]}`
+            );
+              alert("Link copied!");
+            }}
+          className="px-4 py-2 bg-white text-black text-sm font-semibold rounded-lg hover:bg-white/90 transition whitespace-nowrap"
+          >
+            Copy Link
+          </button>
+        </div>
+    </div>
 
         {/* Plan Banner */}
         {stats?.user?.plan === "free" && (
