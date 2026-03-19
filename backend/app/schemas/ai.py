@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import List, Optional
 
 class FollowUpRequest(BaseModel):
     context: str
@@ -23,3 +24,14 @@ class LeadAnalysisResponse(BaseModel):
     opportunity: str
     suggested_message: str
     coach_advice: str
+
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+class SalesCoachRequest(BaseModel):
+    message: str
+    chat_history: Optional[List[ChatMessage]] = []
+
+class SalesCoachResponse(BaseModel):
+    response: str

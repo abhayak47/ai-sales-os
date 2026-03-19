@@ -72,3 +72,41 @@ Return ONLY the JSON, nothing else.
     )
     content = response.choices[0].message.content.strip()
     return json.loads(content)
+
+
+def sales_coach_chat(message: str, leads_context: str, chat_history: list) -> str:
+    system_prompt = f"""
+You are an elite AI Sales Coach with 20 years of experience closing deals.
+You are helping a salesperson who has the following leads in their pipeline:
+
+{leads_context}
+
+Your job is to:
+- Give specific, actionable sales advice
+- Help them close deals faster
+- Write messages, emails, scripts on demand
+- Analyze their pipeline and suggest priorities
+- Coach them on objection handling
+- Be direct, confident and results-focused
+
+Always reference their actual leads and pipeline when relevant.
+Keep responses concise but powerful. Use emojis sparingly for emphasis.
+"""
+
+    messages = [{"role": "system", "content": system_prompt}]
+
+    # Add chat history
+    for msg in chat_history:
+        messages.append({"role": msg["role"], "content": msg["content"]})
+
+    # Add current message
+    messages.append({"role": "user", "content": message})
+
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=messages,
+        temperature=0.8,
+        max_tokens=600,
+    )
+
+    return response.choices[0].message.content.strip()
