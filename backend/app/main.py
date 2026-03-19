@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import Base, engine
-from app.routers import auth, ai, leads, payments
+from app.routers import auth, ai, leads, payments, dashboard
 from app.models import user, lead
 
 Base.metadata.create_all(bind=engine)
@@ -25,6 +25,7 @@ app.include_router(auth.router)
 app.include_router(ai.router)
 app.include_router(leads.router)
 app.include_router(payments.router)
+app.include_router(dashboard.router)
 
 @app.get("/")
 def root():
