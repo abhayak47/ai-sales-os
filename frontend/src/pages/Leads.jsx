@@ -10,19 +10,26 @@ const STATUS_COLORS = {
   Lost: "bg-red-500/10 text-red-400 border-red-500/20",
 };
 
+const TEMP_COLORS = {
+  Cold: "text-blue-400",
+  Warm: "text-yellow-400",
+  Hot: "text-red-400",
+};
+
 export default function Leads() {
   const navigate = useNavigate();
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editLead, setEditLead] = useState(null);
+  const [analyzing, setAnalyzing] = useState(null);
+  const [analysis, setAnalysis] = useState(null);
+  const [selectedLead, setSelectedLead] = useState(null);
   const [form, setForm] = useState({
     name: "", email: "", phone: "", company: "", status: "New", notes: "",
   });
 
-  useEffect(() => {
-    fetchLeads();
-  }, []);
+  useEffect(() => { fetchLeads(); }, []);
 
   const fetchLeads = async () => {
     try {
@@ -59,12 +66,9 @@ export default function Leads() {
   const handleEdit = (lead) => {
     setEditLead(lead);
     setForm({
-      name: lead.name,
-      email: lead.email || "",
-      phone: lead.phone || "",
-      company: lead.company || "",
-      status: lead.status,
-      notes: lead.notes || "",
+      name: lead.name, email: lead.email || "",
+      phone: lead.phone || "", company: lead.company || "",
+      status: lead.status, notes: lead.notes || "",
     });
     setShowForm(true);
   };
@@ -73,6 +77,20 @@ export default function Leads() {
     if (!window.confirm("Delete this lead?")) return;
     await API.delete(`/leads/${id}`);
     fetchLeads();
+  };
+
+  const handleAnalyze = async (lead) => {
+    setAnalyzing(lead.id);
+    setSelectedLead(lead);
+    setAnalysis(null);
+    try {
+      const res = await API.post("/ai/analyze-lead", { lead_id: lead.id });
+      setAnalysis(res.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setAnalyzing(null);
+    }
   };
 
   return (
@@ -92,10 +110,7 @@ export default function Leads() {
               key={i}
               onClick={() => navigate(item.path)}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition text-left
-                ${i === 2
-                  ? "bg-white/10 text-white"
-                  : "text-white/50 hover:text-white hover:bg-white/5"
-                }`}
+                ${i === 2 ? "bg-white/10 text-white" : "text-white/50 hover:text-white hover:bg-white/5"}`}
             >
               <span>{item.icon}</span>
               <span>{item.label}</span>
@@ -106,14 +121,12 @@ export default function Leads() {
           onClick={() => { localStorage.removeItem("token"); navigate("/"); }}
           className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm text-white/40 hover:text-white hover:bg-white/5 transition"
         >
-          <span>🚪</span>
-          <span>Logout</span>
+          <span>🚪</span><span>Logout</span>
         </button>
       </div>
 
       {/* Main */}
       <div className="flex-1 p-8 overflow-y-auto">
-        {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold">👥 Lead Manager</h1>
@@ -130,52 +143,28 @@ export default function Leads() {
         {/* Add/Edit Form */}
         {showForm && (
           <div className="border border-white/10 rounded-xl p-6 mb-8">
-            <h2 className="text-lg font-semibold mb-4">
-              {editLead ? "Edit Lead" : "Add New Lead"}
-            </h2>
+            <h2 className="text-lg font-semibold mb-4">{editLead ? "Edit Lead" : "Add New Lead"}</h2>
             <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm text-white/60 mb-1 block">Name *</label>
-                <input
-                  type="text" name="name" value={form.name}
-                  onChange={handleChange} required
-                  placeholder="John Doe"
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-white/30 transition"
-                />
-              </div>
-              <div>
-                <label className="text-sm text-white/60 mb-1 block">Company</label>
-                <input
-                  type="text" name="company" value={form.company}
-                  onChange={handleChange}
-                  placeholder="Acme Corp"
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-white/30 transition"
-                />
-              </div>
-              <div>
-                <label className="text-sm text-white/60 mb-1 block">Email</label>
-                <input
-                  type="email" name="email" value={form.email}
-                  onChange={handleChange}
-                  placeholder="john@example.com"
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-white/30 transition"
-                />
-              </div>
-              <div>
-                <label className="text-sm text-white/60 mb-1 block">Phone</label>
-                <input
-                  type="text" name="phone" value={form.phone}
-                  onChange={handleChange}
-                  placeholder="+91 98765 43210"
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-white/30 transition"
-                />
-              </div>
+              {[
+                { label: "Name *", name: "name", type: "text", placeholder: "John Doe", required: true },
+                { label: "Company", name: "company", type: "text", placeholder: "Acme Corp" },
+                { label: "Email", name: "email", type: "email", placeholder: "john@example.com" },
+                { label: "Phone", name: "phone", type: "text", placeholder: "+91 98765 43210" },
+              ].map((field) => (
+                <div key={field.name}>
+                  <label className="text-sm text-white/60 mb-1 block">{field.label}</label>
+                  <input
+                    type={field.type} name={field.name} value={form[field.name]}
+                    onChange={handleChange} required={field.required}
+                    placeholder={field.placeholder}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-white/30 transition"
+                  />
+                </div>
+              ))}
               <div>
                 <label className="text-sm text-white/60 mb-1 block">Status</label>
-                <select
-                  name="status" value={form.status} onChange={handleChange}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white/30 transition"
-                >
+                <select name="status" value={form.status} onChange={handleChange}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white/30 transition">
                   {["New", "Contacted", "Interested", "Converted", "Lost"].map(s => (
                     <option key={s} value={s} className="bg-black">{s}</option>
                   ))}
@@ -183,29 +172,92 @@ export default function Leads() {
               </div>
               <div>
                 <label className="text-sm text-white/60 mb-1 block">Notes</label>
-                <input
-                  type="text" name="notes" value={form.notes}
-                  onChange={handleChange}
+                <input type="text" name="notes" value={form.notes} onChange={handleChange}
                   placeholder="Any notes..."
                   className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-white/30 transition"
                 />
               </div>
               <div className="col-span-2 flex gap-3">
-                <button
-                  type="submit"
-                  className="px-6 py-2 bg-white text-black font-semibold rounded-lg hover:bg-white/90 transition"
-                >
+                <button type="submit"
+                  className="px-6 py-2 bg-white text-black font-semibold rounded-lg hover:bg-white/90 transition">
                   {editLead ? "Update Lead" : "Add Lead"}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => { setShowForm(false); setEditLead(null); }}
-                  className="px-6 py-2 border border-white/10 rounded-lg text-white/50 hover:text-white transition"
-                >
+                <button type="button" onClick={() => { setShowForm(false); setEditLead(null); }}
+                  className="px-6 py-2 border border-white/10 rounded-lg text-white/50 hover:text-white transition">
                   Cancel
                 </button>
               </div>
             </form>
+          </div>
+        )}
+
+        {/* AI Brain Analysis Panel */}
+        {analysis && selectedLead && (
+          <div className="border border-purple-500/30 bg-purple-500/5 rounded-xl p-6 mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-lg font-bold">🧠 AI Sales Brain Analysis</h2>
+                <p className="text-white/40 text-sm">Analysis for {selectedLead.name}</p>
+              </div>
+              <button onClick={() => setAnalysis(null)}
+                className="text-white/30 hover:text-white transition text-xl">✕</button>
+            </div>
+
+            {/* Score Cards */}
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="border border-white/10 rounded-xl p-4 text-center">
+                <div className="text-3xl font-bold text-white mb-1">
+                  {analysis.deal_score}<span className="text-white/30 text-lg">/10</span>
+                </div>
+                <div className="text-white/40 text-sm">Deal Score</div>
+              </div>
+              <div className="border border-white/10 rounded-xl p-4 text-center">
+                <div className="text-3xl font-bold text-white mb-1">
+                  {analysis.win_probability}<span className="text-white/30 text-lg">%</span>
+                </div>
+                <div className="text-white/40 text-sm">Win Probability</div>
+              </div>
+              <div className="border border-white/10 rounded-xl p-4 text-center">
+                <div className={`text-3xl font-bold mb-1 ${TEMP_COLORS[analysis.deal_temperature]}`}>
+                  {analysis.deal_temperature === "Hot" ? "🔥" : analysis.deal_temperature === "Warm" ? "⚡" : "❄️"}
+                  {" "}{analysis.deal_temperature}
+                </div>
+                <div className="text-white/40 text-sm">Deal Temperature</div>
+              </div>
+            </div>
+
+            {/* Details */}
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="border border-white/10 rounded-xl p-4">
+                <div className="text-xs text-white/40 mb-2 uppercase tracking-wider">⚡ Next Action</div>
+                <div className="text-white font-medium">{analysis.next_action}</div>
+                <div className="text-white/40 text-sm mt-1">📅 {analysis.next_action_timing}</div>
+              </div>
+              <div className="border border-white/10 rounded-xl p-4">
+                <div className="text-xs text-white/40 mb-2 uppercase tracking-wider">🎯 Opportunity</div>
+                <div className="text-white/70 text-sm">{analysis.opportunity}</div>
+              </div>
+              <div className="border border-white/10 rounded-xl p-4">
+                <div className="text-xs text-red-400/60 mb-2 uppercase tracking-wider">⚠️ Risk Factors</div>
+                <div className="text-white/70 text-sm">{analysis.risk_factors}</div>
+              </div>
+              <div className="border border-white/10 rounded-xl p-4">
+                <div className="text-xs text-green-400/60 mb-2 uppercase tracking-wider">🏆 Coach Advice</div>
+                <div className="text-white/70 text-sm">{analysis.coach_advice}</div>
+              </div>
+            </div>
+
+            {/* Suggested Message */}
+            <div className="border border-purple-500/20 rounded-xl p-4">
+              <div className="text-xs text-purple-400/60 mb-2 uppercase tracking-wider">💬 AI Suggested Message</div>
+              <div className="text-white/80 text-sm">{analysis.suggested_message}</div>
+              <button
+                onClick={() => navigator.clipboard.writeText(analysis.suggested_message)}
+                className="mt-3 text-xs px-3 py-1 border border-purple-500/20 rounded-lg text-purple-400 hover:bg-purple-500/10 transition"
+              >
+                Copy Message
+              </button>
+            </div>
           </div>
         )}
 
@@ -232,10 +284,8 @@ export default function Leads() {
               </thead>
               <tbody>
                 {leads.map((lead, i) => (
-                  <tr
-                    key={lead.id}
-                    className={`border-b border-white/5 hover:bg-white/3 transition ${i % 2 === 0 ? "" : "bg-white/2"}`}
-                  >
+                  <tr key={lead.id}
+                    className="border-b border-white/5 hover:bg-white/3 transition">
                     <td className="px-6 py-4 font-medium">{lead.name}</td>
                     <td className="px-6 py-4 text-white/50">{lead.company || "—"}</td>
                     <td className="px-6 py-4 text-white/50 text-sm">
@@ -253,15 +303,18 @@ export default function Leads() {
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
                         <button
-                          onClick={() => handleEdit(lead)}
-                          className="text-xs px-3 py-1 border border-white/10 rounded-lg text-white/50 hover:text-white hover:border-white/30 transition"
+                          onClick={() => handleAnalyze(lead)}
+                          disabled={analyzing === lead.id}
+                          className="text-xs px-3 py-1 border border-purple-500/30 rounded-lg text-purple-400 hover:bg-purple-500/10 transition disabled:opacity-50"
                         >
+                          {analyzing === lead.id ? "⚡ Analyzing..." : "🧠 AI Brain"}
+                        </button>
+                        <button onClick={() => handleEdit(lead)}
+                          className="text-xs px-3 py-1 border border-white/10 rounded-lg text-white/50 hover:text-white hover:border-white/30 transition">
                           Edit
                         </button>
-                        <button
-                          onClick={() => handleDelete(lead.id)}
-                          className="text-xs px-3 py-1 border border-red-500/20 rounded-lg text-red-400/50 hover:text-red-400 transition"
-                        >
+                        <button onClick={() => handleDelete(lead.id)}
+                          className="text-xs px-3 py-1 border border-red-500/20 rounded-lg text-red-400/50 hover:text-red-400 transition">
                           Delete
                         </button>
                       </div>
