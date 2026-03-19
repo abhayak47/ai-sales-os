@@ -16,8 +16,8 @@ Tone: {tone}
 Your task is to generate 3 follow-up messages. Be detailed, specific, and personalized based on the context.
 
 Rules:
-- Email: Write a FULL email with subject line AND complete email body (at least 150 words). Be warm, reference specific details from the context.
-- WhatsApp: Write a conversational WhatsApp message (3-5 lines). Reference specific details. End with a clear call to action.
+- Email: Write a FULL email with subject line AND complete email body (at least 150 words).
+- WhatsApp: Write a conversational WhatsApp message (3-5 lines). End with a clear call to action.
 - Short: Write a powerful one-liner follow-up that creates curiosity or urgency.
 
 Return ONLY this exact JSON format, nothing else:
@@ -74,6 +74,107 @@ Return ONLY the JSON, nothing else.
     return json.loads(content)
 
 
+def score_lead(name: str, company: str, status: str, notes: str) -> dict:
+    prompt = f"""
+You are an AI lead scoring system. Score this lead based on available information.
+
+Lead Name: {name}
+Company: {company or "Unknown"}
+Status: {status}
+Notes: {notes or "No notes"}
+
+Return ONLY this JSON:
+{{
+    "score": <number 0-100>,
+    "predicted_revenue": <estimated deal value in INR, e.g. 50000>,
+    "follow_up_date": "<recommended follow up date e.g. Tomorrow, In 2 days, Next week>",
+    "score_reason": "<one line reason for this score>"
+}}
+
+Scoring criteria:
+- New lead with no notes = 20-30
+- Contacted lead = 30-50
+- Interested lead with notes = 50-75
+- Hot lead ready to close = 75-95
+- Converted = 100
+- Lost = 5
+
+Return ONLY the JSON.
+"""
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3,
+        max_tokens=200,
+    )
+    content = response.choices[0].message.content.strip()
+    return json.loads(content)
+
+
+def generate_email_sequence(name: str, company: str, context: str, tone: str) -> dict:
+    prompt = f"""
+You are an expert sales email copywriter. Create a 7-day email follow-up sequence.
+
+Lead Name: {name}
+Company: {company or "their company"}
+Context: {context}
+Tone: {tone}
+
+Create 7 emails, one per day. Each email should be different — vary the angle, hook, and CTA.
+
+Return ONLY this JSON:
+{{
+    "sequence": [
+        {{
+            "day": 1,
+            "subject": "email subject",
+            "body": "full email body"
+        }},
+        {{
+            "day": 2,
+            "subject": "email subject",
+            "body": "full email body"
+        }},
+        {{
+            "day": 3,
+            "subject": "email subject",
+            "body": "full email body"
+        }},
+        {{
+            "day": 4,
+            "subject": "email subject",
+            "body": "full email body"
+        }},
+        {{
+            "day": 5,
+            "subject": "email subject",
+            "body": "full email body"
+        }},
+        {{
+            "day": 6,
+            "subject": "email subject",
+            "body": "full email body"
+        }},
+        {{
+            "day": 7,
+            "subject": "email subject",
+            "body": "full email body"
+        }}
+    ]
+}}
+
+Make each email unique, valuable and not spammy. Return ONLY the JSON.
+"""
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.7,
+        max_tokens=2000,
+    )
+    content = response.choices[0].message.content.strip()
+    return json.loads(content)
+
+
 def sales_coach_chat(message: str, leads_context: str, chat_history: list) -> str:
     system_prompt = f"""
 You are an elite AI Sales Coach with 20 years of experience closing deals.
@@ -92,14 +193,9 @@ Your job is to:
 Always reference their actual leads and pipeline when relevant.
 Keep responses concise but powerful. Use emojis sparingly for emphasis.
 """
-
     messages = [{"role": "system", "content": system_prompt}]
-
-    # Add chat history
     for msg in chat_history:
         messages.append({"role": msg["role"], "content": msg["content"]})
-
-    # Add current message
     messages.append({"role": "user", "content": message})
 
     response = client.chat.completions.create(
@@ -108,5 +204,4 @@ Keep responses concise but powerful. Use emojis sparingly for emphasis.
         temperature=0.8,
         max_tokens=600,
     )
-
     return response.choices[0].message.content.strip()

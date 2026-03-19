@@ -9,6 +9,7 @@ import Leads from "./pages/Leads";
 import Pricing from "./pages/Pricing";
 import SalesCoach from "./pages/SalesCoach";
 import Capture from "./pages/Capture";
+import EmailSequence from "./pages/EmailSequence";
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/coach" element={<SalesCoach />} />
           <Route path="/capture/:username" element={<Capture />} />
+          <Route path="/sequence" element={<EmailSequence />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

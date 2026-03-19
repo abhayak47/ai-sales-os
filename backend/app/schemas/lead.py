@@ -27,6 +27,9 @@ class LeadResponse(BaseModel):
     company: Optional[str] = None
     status: str
     notes: Optional[str] = None
+    score: Optional[float] = 0.0
+    predicted_revenue: Optional[float] = 0.0
+    follow_up_date: Optional[str] = None
     created_at: datetime
 
     class Config:
