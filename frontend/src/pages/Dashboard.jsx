@@ -17,14 +17,15 @@ export default function Dashboard() {
         <div className="text-xl font-bold mb-10">⚡ AI Sales OS</div>
         <nav className="flex flex-col gap-1 flex-1">
           {[
-            { icon: "🏠", label: "Dashboard" },
-            { icon: "🤖", label: "AI Follow-Up" },
-            { icon: "👥", label: "Leads" },
-            { icon: "📊", label: "Analytics" },
-            { icon: "⚙️", label: "Settings" },
+            { icon: "🏠", label: "Dashboard", path: "/dashboard" },
+            { icon: "🤖", label: "AI Follow-Up", path: "/followup" },
+            { icon: "👥", label: "Leads", path: "/leads" },
+            { icon: "💳", label: "Pricing", path: "/pricing" },
+            { icon: "⚙️", label: "Settings", path: "/dashboard" },
           ].map((item, i) => (
             <button
               key={i}
+              onClick={() => navigate(item.path)}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition text-left
                 ${i === 0
                   ? "bg-white/10 text-white"
@@ -47,7 +48,6 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <div className="flex-1 p-8">
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold">Good morning 👋</h1>
           <p className="text-white/40 text-sm mt-1">
@@ -81,12 +81,26 @@ export default function Dashboard() {
               {
                 icon: "🤖",
                 title: "Generate Follow-Up",
-                desc: "Use AI to write the perfect follow-up message", path: "/followup",
+                desc: "Use AI to write the perfect follow-up message",
+                path: "/followup",
               },
               {
                 icon: "➕",
                 title: "Add New Lead",
-                desc: "Add a new lead to your pipeline", path: "/leads",
+                desc: "Add a new lead to your pipeline",
+                path: "/leads",
+              },
+              {
+                icon: "🧠",
+                title: "AI Sales Brain",
+                desc: "Get AI insights on your leads",
+                path: "/leads",
+              },
+              {
+                icon: "💳",
+                title: "Upgrade Plan",
+                desc: "Get more AI credits and unlock features",
+                path: "/pricing",
               },
             ].map((action, i) => (
               <div
