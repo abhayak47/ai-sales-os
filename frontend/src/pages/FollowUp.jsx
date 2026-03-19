@@ -41,7 +41,7 @@ export default function FollowUp() {
 
   const sendWhatsApp = (text) => {
     const encoded = encodeURIComponent(text);
-    window.open(`https://wa.me/?text=${encoded}`, "_blank");
+    window.open(`https://wa.me/918329871067?text=${encoded}`, "_blank");
   };
 
   const sendEmail = (text) => {
@@ -49,7 +49,7 @@ export default function FollowUp() {
     const subject = lines[0].replace("Subject: ", "");
     const body = lines.slice(2).join("\n");
     window.open(
-      `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,
+      `mailto:abhaybk47@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,
       "_blank"
     );
   };
