@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import API from "../api/axios";
+import Sidebar from "../components/Sidebar";
 
 export default function FollowUp() {
-  const navigate = useNavigate();
   const [form, setForm] = useState({
     context: "",
     client_type: "",
@@ -41,7 +40,7 @@ export default function FollowUp() {
 
   const sendWhatsApp = (text) => {
     const encoded = encodeURIComponent(text);
-    window.open(`https://wa.me/918329871067?text=${encoded}`, "_blank");
+    window.open(`https://wa.me/919689933549?text=${encoded}`, "_blank");
   };
 
   const sendEmail = (text) => {
@@ -56,69 +55,30 @@ export default function FollowUp() {
 
   return (
     <div className="min-h-screen bg-black text-white flex">
-      {/* Sidebar */}
-      <div className="w-64 border-r border-white/10 p-6 flex flex-col">
-        <div className="text-xl font-bold mb-10">⚡ AI Sales OS</div>
-        <nav className="flex flex-col gap-1 flex-1">
-          {[
-            { icon: "🏠", label: "Dashboard", path: "/dashboard" },
-            { icon: "🗣️", label: "Sales Coach", path: "/coach" },
-            { icon: "🤖", label: "AI Follow-Up", path: "/followup" },
-            { icon: "👥", label: "Leads", path: "/leads" },
-            { icon: "💳", label: "Pricing", path: "/pricing" },
-          ].map((item, i) => (
-            <button
-              key={i}
-              onClick={() => navigate(item.path)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition text-left
-                ${i === 2
-                  ? "bg-white/10 text-white"
-                  : "text-white/50 hover:text-white hover:bg-white/5"
-                }`}
-            >
-              <span>{item.icon}</span>
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </nav>
-        <button
-          onClick={() => {
-            localStorage.removeItem("token");
-            navigate("/");
-          }}
-          className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm text-white/40 hover:text-white hover:bg-white/5 transition"
-        >
-          <span>🚪</span>
-          <span>Logout</span>
-        </button>
-      </div>
+      <Sidebar />
 
-      {/* Main */}
-      <div className="flex-1 p-8 overflow-y-auto">
+      <div className="flex-1 p-4 md:p-8 overflow-y-auto mt-16 md:mt-0">
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-2xl font-bold mb-2">🤖 AI Follow-Up Generator</h1>
-          <p className="text-white/40 text-sm mb-8">
+          <h1 className="text-xl md:text-2xl font-bold mb-2">🤖 AI Follow-Up Generator</h1>
+          <p className="text-white/40 text-sm mb-6">
             Describe your sales situation and AI will generate the perfect follow-up.
           </p>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4 mb-8">
             <div>
-              <label className="text-sm text-white/60 mb-1 block">
-                Sales Context
-              </label>
+              <label className="text-sm text-white/60 mb-1 block">Sales Context</label>
               <textarea
                 name="context"
                 value={form.context}
                 onChange={handleChange}
-                placeholder="E.g. I met John at a networking event. He runs a digital agency and was interested in our AI tool but said he needs to think about it..."
+                placeholder="E.g. I met John at a networking event..."
                 required
                 rows={4}
                 className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-white/30 transition resize-none"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm text-white/60 mb-1 block">Client Type</label>
                 <select
@@ -136,7 +96,6 @@ export default function FollowUp() {
                   <option value="SMB Owner" className="bg-black">SMB Owner</option>
                 </select>
               </div>
-
               <div>
                 <label className="text-sm text-white/60 mb-1 block">Tone</label>
                 <select
@@ -167,99 +126,70 @@ export default function FollowUp() {
               disabled={loading}
               className="w-full py-3 bg-white text-black font-semibold rounded-lg hover:bg-white/90 transition disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {loading ? (
-                <>
-                  <span className="animate-spin">⚡</span>
-                  Generating...
-                </>
-              ) : (
-                "Generate Follow-Up Messages"
-              )}
+              {loading ? <><span className="animate-spin">⚡</span> Generating...</> : "Generate Follow-Up Messages"}
             </button>
           </form>
 
-          {/* Results */}
           {result && (
             <div className="space-y-4">
               <h2 className="text-lg font-semibold">✅ Generated Messages</h2>
 
               {/* Email */}
-              <div className="border border-white/10 rounded-xl p-5 hover:border-white/20 transition">
-                <div className="flex items-center justify-between mb-3">
+              <div className="border border-white/10 rounded-xl p-5">
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-3 gap-2">
                   <span className="text-sm font-medium">📧 Email</span>
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => sendEmail(result.email)}
-                      className="text-xs px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-400 hover:bg-blue-500/20 transition"
-                    >
+                    <button onClick={() => sendEmail(result.email)}
+                      className="text-xs px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-400 hover:bg-blue-500/20 transition">
                       📧 Open in Mail
                     </button>
-                    <button
-                      onClick={() => copyText(result.email, "email")}
-                      className="text-xs px-3 py-1 border border-white/10 rounded-lg text-white/40 hover:text-white transition"
-                    >
+                    <button onClick={() => copyText(result.email, "email")}
+                      className="text-xs px-3 py-1 border border-white/10 rounded-lg text-white/40 hover:text-white transition">
                       {copied === "email" ? "✅ Copied!" : "Copy"}
                     </button>
                   </div>
                 </div>
-                <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">
-                  {result.email}
-                </p>
+                <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">{result.email}</p>
               </div>
 
               {/* WhatsApp */}
-              <div className="border border-white/10 rounded-xl p-5 hover:border-white/20 transition">
-                <div className="flex items-center justify-between mb-3">
+              <div className="border border-white/10 rounded-xl p-5">
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-3 gap-2">
                   <span className="text-sm font-medium">💬 WhatsApp</span>
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => sendWhatsApp(result.whatsapp)}
-                      className="text-xs px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400 hover:bg-green-500/20 transition flex items-center gap-1"
-                    >
-                      <span>📱</span> Send on WhatsApp
+                    <button onClick={() => sendWhatsApp(result.whatsapp)}
+                      className="text-xs px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400 hover:bg-green-500/20 transition">
+                      📱 Send on WhatsApp
                     </button>
-                    <button
-                      onClick={() => copyText(result.whatsapp, "whatsapp")}
-                      className="text-xs px-3 py-1 border border-white/10 rounded-lg text-white/40 hover:text-white transition"
-                    >
+                    <button onClick={() => copyText(result.whatsapp, "whatsapp")}
+                      className="text-xs px-3 py-1 border border-white/10 rounded-lg text-white/40 hover:text-white transition">
                       {copied === "whatsapp" ? "✅ Copied!" : "Copy"}
                     </button>
                   </div>
                 </div>
-                <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">
-                  {result.whatsapp}
-                </p>
+                <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">{result.whatsapp}</p>
               </div>
 
               {/* One-liner */}
-              <div className="border border-white/10 rounded-xl p-5 hover:border-white/20 transition">
-                <div className="flex items-center justify-between mb-3">
+              <div className="border border-white/10 rounded-xl p-5">
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-3 gap-2">
                   <span className="text-sm font-medium">⚡ One-Liner</span>
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => sendWhatsApp(result.short)}
-                      className="text-xs px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400 hover:bg-green-500/20 transition flex items-center gap-1"
-                    >
-                      <span>📱</span> Send on WhatsApp
+                    <button onClick={() => sendWhatsApp(result.short)}
+                      className="text-xs px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400 hover:bg-green-500/20 transition">
+                      📱 Send on WhatsApp
                     </button>
-                    <button
-                      onClick={() => copyText(result.short, "short")}
-                      className="text-xs px-3 py-1 border border-white/10 rounded-lg text-white/40 hover:text-white transition"
-                    >
+                    <button onClick={() => copyText(result.short, "short")}
+                      className="text-xs px-3 py-1 border border-white/10 rounded-lg text-white/40 hover:text-white transition">
                       {copied === "short" ? "✅ Copied!" : "Copy"}
                     </button>
                   </div>
                 </div>
-                <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">
-                  {result.short}
-                </p>
+                <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">{result.short}</p>
               </div>
 
-              {/* Generate Again */}
-              <button
-                onClick={() => setResult(null)}
-                className="w-full py-3 border border-white/10 rounded-lg text-white/40 hover:text-white hover:border-white/30 transition text-sm"
-              >
+              <button onClick={() => setResult(null)}
+                className="w-full py-3 border border-white/10 rounded-lg text-white/40 hover:text-white hover:border-white/30 transition text-sm">
                 Generate New Messages
               </button>
             </div>
