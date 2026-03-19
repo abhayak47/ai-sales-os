@@ -1,15 +1,14 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://127.0.0.1:8000",
+  baseURL: "https://ai-sales-os-backend.onrender.com",
 });
 
-// Automatically attach token to every request
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
-  }
+  }cd C:\Users\Admin\OneDrive\Desktop\ai-sales-os
   return config;
 });
 
