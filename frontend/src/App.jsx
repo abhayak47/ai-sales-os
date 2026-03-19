@@ -6,6 +6,7 @@ import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import FollowUp from "./pages/FollowUp";
 import Leads from "./pages/Leads";
+import Pricing from "./pages/Pricing";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/followup" element={<FollowUp />} />
           <Route path="/leads" element={<Leads />} />
+          <Route path="/pricing" element={<Pricing />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
