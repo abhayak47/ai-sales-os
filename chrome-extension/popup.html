@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Sales OS</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      width: 360px;
+      min-height: 480px;
+      background: #0a0a0a;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 13px;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: #111111;
+      border-bottom: 1px solid #222;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header-left { display: flex; align-items: center; gap: 8px; }
+    .header-logo { font-size: 18px; }
+    .header-title { font-weight: 700; font-size: 14px; color: #fff; }
+    .header-sub { font-size: 11px; color: #555; }
+    .logout-btn {
+      background: none;
+      border: 1px solid #333;
+      color: #666;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 11px;
+      transition: all 0.2s;
+    }
+    .logout-btn:hover { border-color: #666; color: #fff; }
+
+    /* ── Views ── */
+    .view { display: none; padding: 20px 16px; }
+    .view.active { display: block; }
+
+    /* ── Login View ── */
+    .login-heading {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .login-sub {
+      color: #555;
+      font-size: 12px;
+      margin-bottom: 20px;
+    }
+    .form-group { margin-bottom: 12px; }
+    .form-group label {
+      display: block;
+      font-size: 11px;
+      color: #888;
+      margin-bottom: 5px;
+    }
+    .form-group input {
+      width: 100%;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 9px 12px;
+      color: #fff;
+      font-size: 13px;
+      outline: none;
+      transition: border 0.2s;
+    }
+    .form-group input:focus { border-color: #444; }
+
+    .btn-primary {
+      width: 100%;
+      padding: 10px;
+      background: #ffffff;
+      color: #000000;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Not LinkedIn View ── */
+    .not-linkedin {
+      text-align: center;
+      padding: 40px 20px;
+    }
+    .not-linkedin .icon { font-size: 40px; margin-bottom: 12px; }
+    .not-linkedin h3 { font-size: 15px; margin-bottom: 8px; }
+    .not-linkedin p { color: #555; font-size: 12px; line-height: 1.5; }
+    .linkedin-link {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 8px 20px;
+      border: 1px solid #0077b5;
+      border-radius: 8px;
+      color: #0077b5;
+      text-decoration: none;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .linkedin-link:hover { background: #0077b510; }
+
+    /* ── Profile Card ── */
+    .profile-card {
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+    .profile-name {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+    .profile-title {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 2px;
+    }
+    .profile-company {
+      font-size: 12px;
+      color: #0077b5;
+      font-weight: 600;
+    }
+    .profile-location {
+      font-size: 11px;
+      color: #555;
+      margin-top: 4px;
+    }
+
+    /* ── Edit Fields ── */
+    .edit-section { margin-bottom: 14px; }
+    .edit-section label {
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 4px;
+      display: block;
+    }
+    .edit-section input,
+    .edit-section select,
+    .edit-section textarea {
+      width: 100%;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: #fff;
+      font-size: 12px;
+      outline: none;
+      transition: border 0.2s;
+      font-family: inherit;
+    }
+    .edit-section input:focus,
+    .edit-section select:focus,
+    .edit-section textarea:focus { border-color: #444; }
+    .edit-section select option { background: #1a1a1a; }
+    .edit-section textarea { resize: none; }
+
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* ── Status Badge ── */
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
+    .status-text { font-size: 11px; color: #555; }
+
+    /* ── Save Button ── */
+    .btn-save {
+      width: 100%;
+      padding: 11px;
+      background: #fff;
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: opacity 0.2s;
+    }
+    .btn-save:hover { opacity: 0.9; }
+    .btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Success View ── */
+    .success-view {
+      text-align: center;
+      padding: 32px 20px;
+    }
+    .success-icon { font-size: 48px; margin-bottom: 12px; }
+    .success-name { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .success-sub { color: #555; font-size: 12px; margin-bottom: 20px; }
+    .btn-outline {
+      width: 100%;
+      padding: 10px;
+      background: transparent;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #888;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 8px;
+    }
+    .btn-outline:hover { border-color: #666; color: #fff; }
+
+    /* ── Error / Toast ── */
+    .error-msg {
+      background: #ff000015;
+      border: 1px solid #ff000030;
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: #ff6b6b;
+      font-size: 12px;
+      margin-bottom: 12px;
+      display: none;
+    }
+    .error-msg.show { display: block; }
+
+    /* ── Credits badge ── */
+    .credits-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 11px;
+      color: #888;
+      margin-bottom: 14px;
+    }
+    .credits-badge span { color: #fff; font-weight: 700; }
+  </style>
+</head>
+<body>
+
+  <!-- Header (shown when logged in) -->
+  <div class="header" id="header" style="display:none;">
+    <div class="header-left">
+      <div class="header-logo">🤖</div>
+      <div>
+        <div class="header-title">AI Sales OS</div>
+        <div class="header-sub" id="header-email">Loading...</div>
+      </div>
+    </div>
+    <button class="logout-btn" id="logout-btn">Logout</button>
+  </div>
+
+  <!-- VIEW 1: Login -->
+  <div class="view active" id="view-login">
+    <div style="text-align:center; margin-bottom: 20px; padding-top: 10px;">
+      <div style="font-size: 36px; margin-bottom: 8px;">🤖</div>
+      <div class="login-heading">AI Sales OS</div>
+      <div class="login-sub">Login to capture LinkedIn leads</div>
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="you@example.com" />
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="login-password" placeholder="••••••••" />
+    </div>
+    <div class="error-msg" id="login-error">Invalid email or password.</div>
+    <button class="btn-primary" id="login-btn">Login →</button>
+    <div style="text-align:center; margin-top: 12px;">
+      <a href="https://ai-sales-os-plum.vercel.app/signup"
+         target="_blank"
+         style="color:#555; font-size:11px; text-decoration:none;">
+        Don't have an account? Sign up →
+      </a>
+    </div>
+  </div>
+
+  <!-- VIEW 2: Not on LinkedIn -->
+  <div class="view" id="view-not-linkedin">
+    <div class="not-linkedin">
+      <div class="icon">🔗</div>
+      <h3>Open a LinkedIn Profile</h3>
+      <p>Navigate to any LinkedIn profile page to capture them as a lead in your pipeline.</p>
+      <a class="linkedin-link" href="https://www.linkedin.com/search/results/people/"
+         target="_blank">
+        Open LinkedIn →
+      </a>
+    </div>
+  </div>
+
+  <!-- VIEW 3: Capture Lead -->
+  <div class="view" id="view-capture">
+
+    <div class="credits-badge">
+      ⚡ <span id="credits-count">--</span> AI credits remaining
+    </div>
+
+    <!-- Scraped Profile Preview -->
+    <div class="profile-card">
+      <div class="profile-name" id="preview-name">Loading...</div>
+      <div class="profile-title" id="preview-title"></div>
+      <div class="profile-company" id="preview-company"></div>
+      <div class="profile-location" id="preview-location"></div>
+    </div>
+
+    <!-- Editable Fields -->
+    <div class="edit-section">
+      <label>Full Name *</label>
+      <input type="text" id="field-name" placeholder="Full name" />
+    </div>
+
+    <div class="row-2">
+      <div class="edit-section">
+        <label>Company</label>
+        <input type="text" id="field-company" placeholder="Company name" />
+      </div>
+      <div class="edit-section">
+        <label>Status</label>
+        <select id="field-status">
+          <option value="New">New</option>
+          <option value="Contacted">Contacted</option>
+          <option value="Interested">Interested</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="edit-section">
+      <label>Email (optional)</label>
+      <input type="email" id="field-email" placeholder="name@company.com" />
+    </div>
+
+    <div class="edit-section">
+      <label>Phone (optional)</label>
+      <input type="text" id="field-phone" placeholder="+91 98765 43210" />
+    </div>
+
+    <div class="edit-section">
+      <label>Notes</label>
+      <textarea id="field-notes" rows="2"
+        placeholder="e.g. Met on LinkedIn, interested in automation..."></textarea>
+    </div>
+
+    <div class="error-msg" id="capture-error">Something went wrong.</div>
+
+    <button class="btn-save" id="save-btn">
+      <span id="save-btn-text">⚡ Save to Pipeline</span>
+    </button>
+
+  </div>
+
+  <!-- VIEW 4: Success -->
+  <div class="view" id="view-success">
+    <div class="success-view">
+      <div class="success-icon">✅</div>
+      <div class="success-name" id="success-name">Lead Saved!</div>
+      <div class="success-sub">Successfully added to your AI Sales OS pipeline.</div>
+      <button class="btn-outline" id="capture-another-btn">
+        ← Capture Another
+      </button>
+      <button class="btn-outline" id="open-pipeline-btn">
+        📊 Open Pipeline →
+      </button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head><title>Generate Icons</title></head>
+<body style="background:#111; color:#fff; font-family:sans-serif; padding:20px;">
+  <h3>Click each button to download the icon</h3>
+  <br/>
+  <button onclick="generateIcon(16)">Download icon16.png</button>
+  <button onclick="generateIcon(48)">Download icon48.png</button>
+  <button onclick="generateIcon(128)">Download icon128.png</button>
+
+  <canvas id="canvas" style="display:none;"></canvas>
+
+  <script>
+    function generateIcon(size) {
+      const canvas = document.getElementById("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d");
+
+      // Background
+      ctx.fillStyle = "#1E3A5F";
+      ctx.beginPath();
+      ctx.roundRect(0, 0, size, size, size * 0.18);
+      ctx.fill();
+
+      // Robot emoji text
+      ctx.font = `${size * 0.6}px serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("🤖", size / 2, size / 2);
+
+      // Download
+      const link = document.createElement("a");
+      link.download = `icon${size}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
+  </script>
+</body>
+</html>
+```
+
+Press **Ctrl + S**
+
+---
+
+## 🔵 Now Generate the Icons
+
+1. Open **File Explorer** → go to your `chrome-extension` folder
+2. Double click `generate-icons.html` to open it in your browser
+3. Click **"Download icon16.png"** → save it inside `chrome-extension` folder
+4. Click **"Download icon48.png"** → save it inside `chrome-extension` folder
+5. Click **"Download icon128.png"** → save it inside `chrome-extension` folder
+
+---
+
+✅ After this your `chrome-extension` folder should have these files:
+```
+chrome-extension/
+├── manifest.json
+├── content.js
+├── background.js
+├── popup.html
+├── popup.js
+├── generate-icons.html   ← only used for icon generation
+├── icon16.png
+├── icon48.png
+└── icon128.png

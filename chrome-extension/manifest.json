@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "AI Sales OS — LinkedIn Lead Capture",
+  "version": "1.0.0",
+  "description": "Capture LinkedIn profiles as leads directly into your AI Sales OS pipeline.",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://www.linkedin.com/*",
+    "https://ai-sales-os-backend.onrender.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.linkedin.com/in/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "AI Sales OS — Capture Lead"
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}
