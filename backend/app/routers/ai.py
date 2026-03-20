@@ -13,12 +13,24 @@ from app.services.ai import (
     sales_coach_chat, score_lead,
     generate_email_sequence
 )
-from app.services.auth import get_current_user
+from app.services.auth import get_current_user, deduct_credits
 from app.models.lead import Lead
 
 router = APIRouter(prefix="/ai", tags=["AI"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
+# Credit costs
+CREDIT_COSTS = {
+    "followup": 1,
+    "analyze_lead": 3,
+    "score_lead": 1,
+    "email_sequence": 5,
+    "coach": 1,
+}
+
+@router.get("/credit-costs")
+def get_credit_costs():
+    return CREDIT_COSTS
 
 @router.post("/followup", response_model=FollowUpResponse)
 def generate_follow_up(
@@ -29,8 +41,8 @@ def generate_follow_up(
     user = get_current_user(token, db)
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    if user.ai_credits <= 0:
-        raise HTTPException(status_code=403, detail="No AI credits left. Please upgrade.")
+    if not deduct_credits(db, user, "followup", CREDIT_COSTS["followup"]):
+        raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['followup']} credits. Please upgrade.")
     try:
         result = generate_followup(
             context=request.context,
@@ -38,9 +50,10 @@ def generate_follow_up(
             tone=request.tone
         )
     except Exception as e:
+        # Refund credits on error
+        user.ai_credits += CREDIT_COSTS["followup"]
+        db.commit()
         raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
-    user.ai_credits -= 1
-    db.commit()
     return result
 
 
@@ -59,8 +72,8 @@ def analyze_lead_endpoint(
     ).first()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
-    if user.ai_credits <= 0:
-        raise HTTPException(status_code=403, detail="No AI credits left. Please upgrade.")
+    if not deduct_credits(db, user, "analyze_lead", CREDIT_COSTS["analyze_lead"]):
+        raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['analyze_lead']} credits. Please upgrade.")
     try:
         result = analyze_lead(
             name=lead.name,
@@ -69,9 +82,9 @@ def analyze_lead_endpoint(
             notes=lead.notes or ""
         )
     except Exception as e:
+        user.ai_credits += CREDIT_COSTS["analyze_lead"]
+        db.commit()
         raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
-    user.ai_credits -= 1
-    db.commit()
     return result
 
 
@@ -90,6 +103,8 @@ def score_lead_endpoint(
     ).first()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
+    if not deduct_credits(db, user, "score_lead", CREDIT_COSTS["score_lead"]):
+        raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['score_lead']} credits. Please upgrade.")
     try:
         result = score_lead(
             name=lead.name,
@@ -102,6 +117,8 @@ def score_lead_endpoint(
         lead.follow_up_date = result["follow_up_date"]
         db.commit()
     except Exception as e:
+        user.ai_credits += CREDIT_COSTS["score_lead"]
+        db.commit()
         raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
     return result
 
@@ -121,8 +138,8 @@ def email_sequence_endpoint(
     ).first()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
-    if user.ai_credits < 3:
-        raise HTTPException(status_code=403, detail="Need at least 3 credits for email sequence.")
+    if not deduct_credits(db, user, "email_sequence", CREDIT_COSTS["email_sequence"]):
+        raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['email_sequence']} credits. Please upgrade.")
     try:
         result = generate_email_sequence(
             name=lead.name,
@@ -131,9 +148,9 @@ def email_sequence_endpoint(
             tone=request.tone
         )
     except Exception as e:
+        user.ai_credits += CREDIT_COSTS["email_sequence"]
+        db.commit()
         raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
-    user.ai_credits -= 3
-    db.commit()
     return result
 
 
@@ -146,8 +163,8 @@ def sales_coach(
     user = get_current_user(token, db)
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    if user.ai_credits <= 0:
-        raise HTTPException(status_code=403, detail="No AI credits left. Please upgrade.")
+    if not deduct_credits(db, user, "coach", CREDIT_COSTS["coach"]):
+        raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['coach']} credits. Please upgrade.")
 
     leads = db.query(Lead).filter(Lead.user_id == user.id).all()
     leads_context = ""
@@ -174,8 +191,7 @@ def sales_coach(
             chat_history=chat_history
         )
     except Exception as e:
+        user.ai_credits += CREDIT_COSTS["coach"]
+        db.commit()
         raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
-
-    user.ai_credits -= 1
-    db.commit()
     return {"response": result}

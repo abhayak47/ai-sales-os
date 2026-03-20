@@ -4,10 +4,10 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from app.models.user import User
+from app.models.credits import CreditsLedger
 from app.schemas.user import UserCreate, TokenData
 from app.config import settings
 
-# Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def hash_password(password: str) -> str:
@@ -34,11 +34,25 @@ def create_user(db: Session, user: UserCreate):
     db_user = User(
         full_name=user.full_name,
         email=user.email,
-        hashed_password=hashed_password
+        hashed_password=hashed_password,
+        ai_credits=25,  # 25 free credits on signup
+        is_onboarded=False,
+        onboarding_step=0
     )
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
+
+    # Log initial credits
+    ledger = CreditsLedger(
+        user_id=db_user.id,
+        action="signup_bonus",
+        credits_used=0,
+        credits_before=0,
+        credits_after=25
+    )
+    db.add(ledger)
+    db.commit()
     return db_user
 
 def authenticate_user(db: Session, email: str, password: str):
@@ -60,3 +74,20 @@ def get_current_user(token: str, db: Session):
         return None
     user = get_user_by_email(db, email=token_data.email)
     return user
+
+def deduct_credits(db: Session, user: User, action: str, amount: int) -> bool:
+    if user.ai_credits < amount:
+        return False
+    credits_before = user.ai_credits
+    user.ai_credits -= amount
+
+    ledger = CreditsLedger(
+        user_id=user.id,
+        action=action,
+        credits_used=amount,
+        credits_before=credits_before,
+        credits_after=user.ai_credits
+    )
+    db.add(ledger)
+    db.commit()
+    return True

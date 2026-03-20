@@ -31,7 +31,7 @@ export default function Signup() {
       loginData.append("password", form.password);
       const loginRes = await API.post("/auth/login", loginData);
       login(null, loginRes.data.access_token);
-      navigate("/dashboard");
+      navigate("/onboarding");
     } catch (err) {
       setError(err.response?.data?.detail || "Something went wrong");
     } finally {

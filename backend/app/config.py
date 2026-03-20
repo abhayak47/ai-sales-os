@@ -14,8 +14,11 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     RAZORPAY_KEY_ID: str = ""
     RAZORPAY_KEY_SECRET: str = ""
+    SMTP_EMAIL: str = ""
+    SMTP_PASSWORD: str = ""
 
     class Config:
         env_file = ".env"
+        extra = "ignore"
 
 settings = Settings()

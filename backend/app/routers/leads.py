@@ -8,7 +8,6 @@ from app.models.lead import Lead
 from app.services.auth import get_current_user
 
 router = APIRouter(prefix="/leads", tags=["Leads"])
-
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 def get_user(token: str, db: Session):
@@ -17,7 +16,6 @@ def get_user(token: str, db: Session):
         raise HTTPException(status_code=401, detail="Not authenticated")
     return user
 
-# Get all leads
 @router.get("/", response_model=List[LeadResponse])
 def get_leads(
     token: str = Depends(oauth2_scheme),
@@ -27,7 +25,21 @@ def get_leads(
     leads = db.query(Lead).filter(Lead.user_id == user.id).all()
     return leads
 
-# Add new lead
+@router.get("/{lead_id}", response_model=LeadResponse)
+def get_lead(
+    lead_id: int,
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+):
+    user = get_user(token, db)
+    lead = db.query(Lead).filter(
+        Lead.id == lead_id,
+        Lead.user_id == user.id
+    ).first()
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    return lead
+
 @router.post("/", response_model=LeadResponse)
 def create_lead(
     lead: LeadCreate,
@@ -41,7 +53,6 @@ def create_lead(
     db.refresh(new_lead)
     return new_lead
 
-# Update lead
 @router.put("/{lead_id}", response_model=LeadResponse)
 def update_lead(
     lead_id: int,
@@ -50,7 +61,10 @@ def update_lead(
     db: Session = Depends(get_db)
 ):
     user = get_user(token, db)
-    lead = db.query(Lead).filter(Lead.id == lead_id, Lead.user_id == user.id).first()
+    lead = db.query(Lead).filter(
+        Lead.id == lead_id,
+        Lead.user_id == user.id
+    ).first()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
     for key, value in lead_data.dict(exclude_unset=True).items():
@@ -59,7 +73,6 @@ def update_lead(
     db.refresh(lead)
     return lead
 
-# Delete lead
 @router.delete("/{lead_id}")
 def delete_lead(
     lead_id: int,
@@ -67,7 +80,10 @@ def delete_lead(
     db: Session = Depends(get_db)
 ):
     user = get_user(token, db)
-    lead = db.query(Lead).filter(Lead.id == lead_id, Lead.user_id == user.id).first()
+    lead = db.query(Lead).filter(
+        Lead.id == lead_id,
+        Lead.user_id == user.id
+    ).first()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
     db.delete(lead)

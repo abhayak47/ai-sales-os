@@ -55,3 +55,16 @@ def get_me(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
             detail="Invalid or expired token"
         )
     return user
+
+# Complete onboarding
+@router.post("/complete-onboarding")
+def complete_onboarding(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+):
+    user = get_current_user(token, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    user.is_onboarded = True
+    db.commit()
+    return {"message": "Onboarding complete"}

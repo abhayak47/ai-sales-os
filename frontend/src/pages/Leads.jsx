@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import API from "../api/axios";
 import Sidebar from "../components/Sidebar";
 
@@ -10,20 +11,12 @@ const STATUS_COLORS = {
   Lost: "bg-red-500/10 text-red-400 border-red-500/20",
 };
 
-const TEMP_COLORS = {
-  Cold: "text-blue-400",
-  Warm: "text-yellow-400",
-  Hot: "text-red-400",
-};
-
 export default function Leads() {
+  const navigate = useNavigate();
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editLead, setEditLead] = useState(null);
-  const [analyzing, setAnalyzing] = useState(null);
-  const [analysis, setAnalysis] = useState(null);
-  const [selectedLead, setSelectedLead] = useState(null);
   const [form, setForm] = useState({
     name: "", email: "", phone: "", company: "", status: "New", notes: "",
   });
@@ -62,7 +55,8 @@ export default function Leads() {
     }
   };
 
-  const handleEdit = (lead) => {
+  const handleEdit = (e, lead) => {
+    e.stopPropagation();
     setEditLead(lead);
     setForm({
       name: lead.name, email: lead.email || "",
@@ -72,24 +66,11 @@ export default function Leads() {
     setShowForm(true);
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (e, id) => {
+    e.stopPropagation();
     if (!window.confirm("Delete this lead?")) return;
     await API.delete(`/leads/${id}`);
     fetchLeads();
-  };
-
-  const handleAnalyze = async (lead) => {
-    setAnalyzing(lead.id);
-    setSelectedLead(lead);
-    setAnalysis(null);
-    try {
-      const res = await API.post("/ai/analyze-lead", { lead_id: lead.id });
-      setAnalysis(res.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setAnalyzing(null);
-    }
   };
 
   return (
@@ -101,7 +82,7 @@ export default function Leads() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-xl md:text-2xl font-bold">👥 Lead Manager</h1>
-            <p className="text-white/40 text-sm mt-1">Track your sales pipeline</p>
+            <p className="text-white/40 text-sm mt-1">Click any lead to view details</p>
           </div>
           <button
             onClick={() => { setShowForm(true); setEditLead(null); setForm({ name: "", email: "", phone: "", company: "", status: "New", notes: "" }); }}
@@ -162,55 +143,6 @@ export default function Leads() {
           </div>
         )}
 
-        {/* AI Brain Analysis */}
-        {analysis && selectedLead && (
-          <div className="border border-purple-500/30 bg-purple-500/5 rounded-xl p-5 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-base font-bold">🧠 AI Sales Brain</h2>
-                <p className="text-white/40 text-sm">{selectedLead.name}</p>
-              </div>
-              <button onClick={() => setAnalysis(null)} className="text-white/30 hover:text-white transition">✕</button>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              {[
-                { label: "Deal Score", value: `${analysis.deal_score}/10` },
-                { label: "Win Rate", value: `${analysis.win_probability}%` },
-                { label: "Temperature", value: analysis.deal_temperature, className: TEMP_COLORS[analysis.deal_temperature] },
-              ].map((item, i) => (
-                <div key={i} className="border border-white/10 rounded-xl p-3 text-center">
-                  <div className={`text-xl font-bold mb-1 ${item.className || ""}`}>{item.value}</div>
-                  <div className="text-white/40 text-xs">{item.label}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-              {[
-                { label: "⚡ Next Action", value: `${analysis.next_action} (${analysis.next_action_timing})` },
-                { label: "🎯 Opportunity", value: analysis.opportunity },
-                { label: "⚠️ Risk", value: analysis.risk_factors },
-                { label: "🏆 Coach Advice", value: analysis.coach_advice },
-              ].map((item, i) => (
-                <div key={i} className="border border-white/10 rounded-xl p-3">
-                  <div className="text-xs text-white/40 mb-1">{item.label}</div>
-                  <div className="text-white/70 text-sm">{item.value}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="border border-purple-500/20 rounded-xl p-3">
-              <div className="text-xs text-purple-400/60 mb-2">💬 Suggested Message</div>
-              <div className="text-white/80 text-sm mb-2">{analysis.suggested_message}</div>
-              <button onClick={() => navigator.clipboard.writeText(analysis.suggested_message)}
-                className="text-xs px-3 py-1 border border-purple-500/20 rounded-lg text-purple-400 hover:bg-purple-500/10 transition">
-                Copy Message
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Leads List */}
         {loading ? (
           <div className="text-white/40 text-center py-20">Loading leads...</div>
@@ -222,7 +154,11 @@ export default function Leads() {
         ) : (
           <div className="space-y-3">
             {leads.map((lead) => (
-              <div key={lead.id} className="border border-white/10 rounded-xl p-4 hover:border-white/20 transition">
+              <div
+                key={lead.id}
+                onClick={() => navigate(`/leads/${lead.id}`)}
+                className="border border-white/10 rounded-xl p-4 hover:border-white/30 transition cursor-pointer"
+              >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2 flex-wrap">
@@ -230,6 +166,11 @@ export default function Leads() {
                       <span className={`text-xs px-2 py-1 rounded-full border ${STATUS_COLORS[lead.status]}`}>
                         {lead.status}
                       </span>
+                      {lead.score > 0 && (
+                        <span className="text-xs text-purple-400 bg-purple-500/10 px-2 py-1 rounded-full">
+                          Score: {lead.score}
+                        </span>
+                      )}
                     </div>
                     <div className="text-white/40 text-sm space-y-1">
                       {lead.company && <div>🏢 {lead.company}</div>}
@@ -240,18 +181,15 @@ export default function Leads() {
                   </div>
                   <div className="flex flex-col gap-2 flex-shrink-0">
                     <button
-                      onClick={() => handleAnalyze(lead)}
-                      disabled={analyzing === lead.id}
-                      className="text-xs px-3 py-1 border border-purple-500/30 rounded-lg text-purple-400 hover:bg-purple-500/10 transition disabled:opacity-50"
+                      onClick={(e) => handleEdit(e, lead)}
+                      className="text-xs px-3 py-1 border border-white/10 rounded-lg text-white/50 hover:text-white transition"
                     >
-                      {analyzing === lead.id ? "⚡..." : "🧠 AI"}
-                    </button>
-                    <button onClick={() => handleEdit(lead)}
-                      className="text-xs px-3 py-1 border border-white/10 rounded-lg text-white/50 hover:text-white transition">
                       Edit
                     </button>
-                    <button onClick={() => handleDelete(lead.id)}
-                      className="text-xs px-3 py-1 border border-red-500/20 rounded-lg text-red-400/50 hover:text-red-400 transition">
+                    <button
+                      onClick={(e) => handleDelete(e, lead.id)}
+                      className="text-xs px-3 py-1 border border-red-500/20 rounded-lg text-red-400/50 hover:text-red-400 transition"
+                    >
                       Del
                     </button>
                   </div>

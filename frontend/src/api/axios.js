@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "https://ai-sales-os-backend.onrender.com",
+  baseURL: "https://ai-sales-os-plum.vercel.app/",
 });
 
 API.interceptors.request.use((config) => {
