@@ -12,6 +12,7 @@ import Capture from "./pages/Capture";
 import EmailSequence from "./pages/EmailSequence";
 import Onboarding from "./pages/Onboarding";
 import LeadDetail from "./pages/LeadDetail";
+import Pipeline from "./pages/Pipeline";
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           <Route path="/followup" element={<FollowUp />} />
           <Route path="/leads" element={<Leads />} />
           <Route path="/leads/:id" element={<LeadDetail />} />
+          <Route path="/pipeline" element={<Pipeline />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/coach" element={<SalesCoach />} />
           <Route path="/capture/:username" element={<Capture />} />

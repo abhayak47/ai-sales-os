@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   { icon: "🗣️", label: "Sales Coach", path: "/coach" },
   { icon: "🤖", label: "AI Follow-Up", path: "/followup" },
   { icon: "📧", label: "Email Sequence", path: "/sequence" },
+  { icon: "📊", label: "Pipeline", path: "/pipeline" },
   { icon: "👥", label: "Leads", path: "/leads" },
   { icon: "💳", label: "Pricing", path: "/pricing" },
 ];
