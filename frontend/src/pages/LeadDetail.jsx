@@ -368,7 +368,43 @@ export default function LeadDetail() {
                   ))}
                 </div>
               </div>
-
+              {/* Health Score */}
+<div className="border border-white/10 rounded-xl p-4">
+  <h3 className="text-sm font-semibold mb-3">💚 Relationship Health</h3>
+  <div className="flex items-center gap-3 mb-2">
+    <div className={`text-2xl font-bold ${
+      lead.health_status === "Hot" ? "text-red-400" :
+      lead.health_status === "Warm" ? "text-yellow-400" :
+      "text-blue-400"
+    }`}>
+      {lead.health_status === "Hot" ? "🔥" :
+       lead.health_status === "Warm" ? "⚡" : "❄️"} {lead.health_status}
+    </div>
+  </div>
+  <div className="w-full bg-white/10 rounded-full h-2 mb-3">
+    <div
+      className={`rounded-full h-2 transition-all ${
+        lead.health_status === "Hot" ? "bg-red-400" :
+        lead.health_status === "Warm" ? "bg-yellow-400" :
+        "bg-blue-400"
+      }`}
+      style={{ width: `${lead.health_score || 50}%` }}
+    />
+  </div>
+  <button
+    onClick={async () => {
+      try {
+        await API.post(`/leads/${id}/calculate-health`);
+        fetchLead();
+      } catch (err) {
+        console.error(err);
+      }
+    }}
+    className="w-full text-xs py-2 border border-white/10 rounded-lg text-white/40 hover:text-white transition"
+  >
+    Recalculate Health
+  </button>
+</div>
               {/* Lead Score */}
               {lead.score > 0 && (
                 <div className="border border-white/10 rounded-xl p-4">

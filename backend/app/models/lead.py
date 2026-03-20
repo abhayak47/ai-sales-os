@@ -16,6 +16,8 @@ class Lead(Base):
     score = Column(Float, default=0.0)
     predicted_revenue = Column(Float, default=0.0)
     follow_up_date = Column(String, nullable=True)
+    health_score = Column(Float, default=50.0)  # 0-100
+    health_status = Column(String, default="Warm")  # Cold, Warm, Hot
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
