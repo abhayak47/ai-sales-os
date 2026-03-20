@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "https://ai-sales-os-plum.vercel.app/",
+  baseURL: "https://ai-sales-os-plum.vercel.app",
 });
 //https://ai-sales-os-plum.vercel.app/
 //http://127.0.0.1:8000
