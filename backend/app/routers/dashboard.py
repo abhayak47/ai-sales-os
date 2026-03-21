@@ -133,3 +133,129 @@ def get_today_focus(
         "date": datetime.now().strftime("%A, %d %B %Y"),
         "actions": actions[:5]
     }
+
+@router.get("/smart-followup/{lead_id}")
+def get_smart_followup(
+    lead_id: int,
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+):
+    user = get_current_user(token, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    lead = db.query(Lead).filter(
+        Lead.id == lead_id,
+        Lead.user_id == user.id
+    ).first()
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+
+    from app.models.lead import Activity
+    activities = db.query(Activity).filter(
+        Activity.lead_id == lead_id
+    ).order_by(Activity.created_at.desc()).all()
+
+    last_activity = activities[0] if activities else None
+    activity_count = len(activities)
+    first_name = lead.name.split()[0]
+
+    # Build context from real data
+    context_parts = []
+    if lead.notes:
+        context_parts.append(f"Notes: {lead.notes}")
+    if activities:
+        recent = activities[:3]
+        for a in recent:
+            context_parts.append(f"{a.type}: {a.title} — {a.description or ''}")
+    context = " | ".join(context_parts) if context_parts else "No history yet"
+
+    recommendations = []
+
+    if lead.status == "New":
+        msg = f"Hi {first_name},"
+        if lead.company:
+            msg += f" I came across {lead.company} and"
+        msg += f" I'd love to connect and explore if we can create value for you. Would you be open to a quick 15-min call this week?"
+        recommendations.append({
+            "channel": "WhatsApp",
+            "timing": "Today",
+            "message": msg,
+            "reason": "First contact — WhatsApp gets 5x higher response rate than email"
+        })
+
+    elif lead.status == "Contacted":
+        if last_activity:
+            msg = f"Hi {first_name}, following up on our {last_activity.type}."
+            if last_activity.description:
+                msg += f" You had mentioned — '{last_activity.description[:80]}...'" if len(last_activity.description) > 80 else f" You had mentioned — '{last_activity.description}'"
+            msg += " Did you get a chance to think about it? Happy to answer any questions!"
+        else:
+            msg = f"Hi {first_name}, just following up on my previous message. Would love to connect — even a 10-min call works!"
+        recommendations.append({
+            "channel": "WhatsApp",
+            "timing": "Tomorrow",
+            "message": msg,
+            "reason": "Reference past interaction to show you remember them"
+        })
+
+    elif lead.status == "Interested":
+        call_msg = f"Call {first_name}"
+        if lead.company:
+            call_msg += f" at {lead.company}"
+        if lead.notes:
+            call_msg += f" — Context: {lead.notes[:100]}"
+        call_msg += " — Discuss specifics, handle objections and move to proposal stage"
+
+        whatsapp_msg = f"Hi {first_name},"
+        if last_activity and last_activity.description:
+            whatsapp_msg += f" great connecting with you! Based on what we discussed about '{last_activity.description[:60]}', I'm putting together a tailored proposal."
+        else:
+            whatsapp_msg += " I'm excited about the opportunity to work together! I'm putting together a tailored proposal for you."
+        whatsapp_msg += " Should have it ready by tomorrow — does that timeline work for you?"
+
+        recommendations.append({
+            "channel": "Call",
+            "timing": "Today",
+            "message": call_msg,
+            "reason": f"🔥 {first_name} is INTERESTED — call now while momentum is high!"
+        })
+        recommendations.append({
+            "channel": "WhatsApp",
+            "timing": "Today",
+            "message": whatsapp_msg,
+            "reason": "Send post-call WhatsApp to keep momentum and set next step"
+        })
+
+    elif lead.status == "Converted":
+        msg = f"Hi {first_name}, hope everything is going smoothly!"
+        if lead.notes:
+            msg += f" Just checking in on {lead.notes[:50]}."
+        msg += " We're always here if you need anything. Also, if you know anyone who could benefit from our services, we'd really appreciate a referral 🙏"
+        recommendations.append({
+            "channel": "WhatsApp",
+            "timing": "This week",
+            "message": msg,
+            "reason": "Nurture converted client for referrals and upsells"
+        })
+
+    elif lead.status == "Lost":
+        msg = f"Hi {first_name}, I hope things are going well!"
+        if last_activity:
+            msg += f" It's been a while since we last spoke about {last_activity.title}."
+        msg += " Things change, and I wanted to check if there's a better time to reconnect. No pressure at all!"
+        recommendations.append({
+            "channel": "Email",
+            "timing": "Next week",
+            "message": msg,
+            "reason": "Re-engage cold/lost lead with low-pressure outreach"
+        })
+
+    return {
+        "lead_name": lead.name,
+        "lead_status": lead.status,
+        "last_activity": last_activity.title if last_activity else "No activity yet",
+        "activity_count": activity_count,
+        "context_used": context,
+        "recommendations": recommendations
+    }
