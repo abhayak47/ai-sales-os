@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import API from "../api/axios";
 import Sidebar from "../components/Sidebar";
 import TodayFocus from "../components/TodayFocus";
+import DealRisks from "../components/DealRisks";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -109,6 +110,9 @@ export default function Dashboard() {
           ))}
         </div>
         
+        {/* Deal Risks */}
+        <DealRisks />
+
         {/* Today's Focus */}
         <div className="mb-4">
           <TodayFocus />

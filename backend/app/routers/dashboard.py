@@ -259,3 +259,72 @@ def get_smart_followup(
         "context_used": context,
         "recommendations": recommendations
     }
+
+@router.get("/deal-risks")
+def get_deal_risks(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+):
+    user = get_current_user(token, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    from app.models.lead import Activity
+    from datetime import timedelta
+
+    leads = db.query(Lead).filter(
+        Lead.user_id == user.id,
+        Lead.status.notin_(["Converted", "Lost"])
+    ).all()
+
+    risks = []
+    now = datetime.now()
+
+    for lead in leads:
+        activities = db.query(Activity).filter(
+            Activity.lead_id == lead.id
+        ).order_by(Activity.created_at.desc()).all()
+
+        last_activity_date = None
+        if activities:
+            last_activity_date = activities[0].created_at.replace(tzinfo=None)
+
+        lead_created = lead.created_at.replace(tzinfo=None)
+        reference_date = last_activity_date or lead_created
+        days_inactive = (now - reference_date).days
+
+        risk_level = None
+        risk_reason = None
+        rescue_strategy = None
+
+        if lead.status == "Interested" and days_inactive >= 3:
+            risk_level = "🚨 Critical"
+            risk_reason = f"HOT lead gone cold — no contact for {days_inactive} days!"
+            rescue_strategy = f"Call {lead.name.split()[0]} immediately. Reference your last conversation and create urgency with a time-limited offer or next meeting."
+
+        elif lead.status == "Contacted" and days_inactive >= 7:
+            risk_level = "⚠️ High"
+            risk_reason = f"No follow-up for {days_inactive} days after first contact"
+            rescue_strategy = f"Send a value-add WhatsApp to {lead.name.split()[0]}. Share a case study or insight relevant to their business. Don't pitch — just add value."
+
+        elif lead.status == "New" and days_inactive >= 5:
+            risk_level = "📋 Medium"
+            risk_reason = f"New lead not contacted for {days_inactive} days"
+            rescue_strategy = f"Reach out to {lead.name.split()[0]} today via WhatsApp. First impressions matter — personalize your message using their company name."
+
+        if risk_level:
+            risks.append({
+                "lead_id": lead.id,
+                "lead_name": lead.name,
+                "company": lead.company or "",
+                "status": lead.status,
+                "days_inactive": days_inactive,
+                "risk_level": risk_level,
+                "risk_reason": risk_reason,
+                "rescue_strategy": rescue_strategy,
+            })
+
+    # Sort by most critical first
+    risks.sort(key=lambda x: x["days_inactive"], reverse=True)
+
+    return {"risks": risks, "total": len(risks)}
