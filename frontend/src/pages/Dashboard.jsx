@@ -325,6 +325,10 @@ export default function Dashboard() {
                 { title: "AI Sales Coach", desc: "Ask for strategy, scripts, and objections", path: "/coach" },
                 { title: "AI Follow-Up", desc: "Draft the next touch with context", path: "/followup" },
                 { title: "Lead Workspace", desc: "Browse the pipeline with filters and views", path: "/leads" },
+                { title: "Contacts", desc: "Manage customers, champions, and stakeholders", path: "/contacts" },
+                { title: "Email Hub", desc: "Send tracked emails and reuse templates", path: "/emails" },
+                { title: "Reports", desc: "Watch segment and activity analytics in real time", path: "/reports" },
+                { title: "Team", desc: "Manage roles and workspace members", path: "/team" },
                 { title: "Pricing", desc: "Manage plans and monetization settings", path: "/pricing" },
               ].map((action) => (
                 <button

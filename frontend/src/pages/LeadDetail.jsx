@@ -3,11 +3,14 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import API from "../api/axios";
 import DealCommandCenter from "../components/DealCommandCenter";
+import EmailWorkspace from "../components/EmailWorkspace";
 import LeadMemoryPanel from "../components/LeadMemoryPanel";
 import MeetingIntel from "../components/MeetingIntel";
+import ReminderPlanner from "../components/ReminderPlanner";
 import Sidebar from "../components/Sidebar";
 import SmartFollowUp from "../components/SmartFollowUp";
 import StrategyLab from "../components/StrategyLab";
+import TeamCommentsPanel from "../components/TeamCommentsPanel";
 
 const ACTIVITY_ICONS = {
   call: "Call",
@@ -37,6 +40,7 @@ export default function LeadDetail() {
   const [analysis, setAnalysis] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [activeTab, setActiveTab] = useState("command_center");
+  const [convertingContact, setConvertingContact] = useState(false);
 
   useEffect(() => {
     fetchLead();
@@ -135,6 +139,9 @@ export default function LeadDetail() {
 
   const tabs = [
     { id: "command_center", label: "Command Center" },
+    { id: "execution", label: "Execution" },
+    { id: "email_workspace", label: "Email Workspace" },
+    { id: "collaboration", label: "Collaboration" },
     { id: "strategy_lab", label: "Strategy Lab" },
     { id: "memory", label: "Lead Memory" },
     { id: "timeline", label: "Timeline" },
@@ -214,6 +221,9 @@ export default function LeadDetail() {
             <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-6">
               <div className="space-y-4">
                 {activeTab === "command_center" && <DealCommandCenter leadId={id} />}
+                {activeTab === "execution" && <ReminderPlanner leadId={id} />}
+                {activeTab === "email_workspace" && <EmailWorkspace leadId={id} />}
+                {activeTab === "collaboration" && <TeamCommentsPanel leadId={id} />}
                 {activeTab === "strategy_lab" && <StrategyLab leadId={id} />}
                 {activeTab === "memory" && <LeadMemoryPanel leadId={id} />}
 
@@ -384,6 +394,23 @@ export default function LeadDetail() {
                         <span className="text-white/25">Open</span>
                       </button>
                     ))}
+                    <button
+                      onClick={async () => {
+                        setConvertingContact(true);
+                        try {
+                          await API.post(`/contacts/from-lead/${id}`);
+                          navigate("/contacts");
+                        } catch (err) {
+                          alert(err.response?.data?.detail || "Could not convert to contact");
+                        } finally {
+                          setConvertingContact(false);
+                        }
+                      }}
+                      className="w-full flex items-center justify-between gap-3 px-4 py-3 border border-white/10 rounded-xl hover:border-white/25 transition text-sm text-left"
+                    >
+                      <span>{convertingContact ? "Converting..." : "Convert to Contact"}</span>
+                      <span className="text-white/25">Open</span>
+                    </button>
                   </div>
                 </div>
 

@@ -10,6 +10,10 @@ const NAV_ITEMS = [
   { icon: "FU", label: "AI Follow-Up", path: "/followup" },
   { icon: "PL", label: "Pipeline", path: "/pipeline" },
   { icon: "LD", label: "Leads", path: "/leads" },
+  { icon: "CT", label: "Contacts", path: "/contacts" },
+  { icon: "EM", label: "Email Hub", path: "/emails" },
+  { icon: "RP", label: "Reports", path: "/reports" },
+  { icon: "TM", label: "Team", path: "/team" },
   { icon: "PR", label: "Pricing", path: "/pricing" },
 ];
 

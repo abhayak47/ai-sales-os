@@ -40,26 +40,31 @@ export default function ExecutionQueue({ leadId = null, compact = false, refresh
   };
 
   const launchTask = async (task) => {
-    const channel = (task.channel || "").toLowerCase();
+    try {
+      const channel = (task.channel || "").toLowerCase();
 
-    if (channel === "whatsapp") {
-      window.open(`https://wa.me/?text=${encodeURIComponent(task.content || task.description || "")}`, "_blank");
-    } else if (channel === "email") {
-      window.open(
-        `mailto:${task.lead_email || ""}?subject=${encodeURIComponent(task.subject || task.title || "")}&body=${encodeURIComponent(task.content || "")}`,
-        "_blank"
-      );
-    } else if (channel === "call") {
-      window.open(`tel:${task.lead_phone || ""}`, "_self");
-    } else if (channel === "linkedin") {
-      await navigator.clipboard.writeText(task.content || task.description || "");
-      alert("LinkedIn message copied. Open LinkedIn and paste it.");
-    } else {
-      await navigator.clipboard.writeText(task.content || task.description || task.title);
-      alert("Task content copied.");
+      if (channel === "whatsapp") {
+        window.open(`https://wa.me/?text=${encodeURIComponent(task.content || task.description || "")}`, "_blank");
+      } else if (channel === "email") {
+        await API.post("/emails/send", {
+          lead_id: task.lead_id,
+          subject: task.subject || task.title || "Follow-up",
+          body: task.content || task.description || "",
+        });
+      } else if (channel === "call") {
+        window.open(`tel:${task.lead_phone || ""}`, "_self");
+      } else if (channel === "linkedin") {
+        await navigator.clipboard.writeText(task.content || task.description || "");
+        alert("LinkedIn message copied. Open LinkedIn and paste it.");
+      } else {
+        await navigator.clipboard.writeText(task.content || task.description || task.title);
+        alert("Task content copied.");
+      }
+
+      await markCompleted(task.id);
+    } catch (err) {
+      alert(err.response?.data?.detail || "Task launch failed");
     }
-
-    await markCompleted(task.id);
   };
 
   return (
