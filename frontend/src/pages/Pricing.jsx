@@ -5,17 +5,17 @@ import API from "../api/axios";
 
 const FREE_PLAN = {
   id: "free",
-  name: "Free",
+  name: "Explorer",
   price: 0,
   credits: 25,
-  description: "Start with 25 credits and test the command-center workflow.",
+  description: "For evaluating the workspace with real deals before you scale usage.",
   billing_type: "free",
   buttonLabel: "Current Plan",
   features: [
     "25 launch credits",
-    "Lead manager and pipeline board",
-    "AI follow-up generation",
-    "AI deal command center",
+    "Lead workspace and pipeline board",
+    "AI follow-up and sales coach",
+    "Deal command center and meeting intel",
   ],
 };
 
@@ -26,9 +26,9 @@ function formatPrice(price) {
 function buildPaidFeatureList(plan) {
   return [
     ...(plan.features || []),
-    "Deal command center and meeting intel",
-    "LinkedIn lead capture extension",
-    "Full pipeline and activity tracking",
+    "Lead memory and saved output history",
+    "Workspace customization and saved views",
+    "Execution queues and meeting prep",
   ];
 }
 
@@ -47,30 +47,12 @@ export default function Pricing() {
     try {
       const res = await API.get("/payments/plans");
       const hasGroupedPlans = res.data?.packs || res.data?.subscriptions;
+      const packSource = hasGroupedPlans ? res.data.packs || {} : {};
+      const subscriptionSource = hasGroupedPlans ? res.data.subscriptions || {} : {};
 
-      const packSource = hasGroupedPlans
-        ? res.data.packs || {}
-        : Object.fromEntries(
-            Object.entries(res.data || {}).filter(([, plan]) => plan?.billing_type !== "subscription")
-          );
-
-      const subscriptionSource = hasGroupedPlans
-        ? res.data.subscriptions || {}
-        : Object.fromEntries(
-            Object.entries(res.data || {}).filter(([, plan]) => plan?.billing_type === "subscription")
-          );
-
-      const packList = Object.entries(packSource).map(([id, plan]) => ({
-        id,
-        ...plan,
-      }));
-      const subscriptionList = Object.entries(subscriptionSource).map(([id, plan]) => ({
-        id,
-        ...plan,
-      }));
-      setPacks(packList);
-      setSubscriptions(subscriptionList);
-    } catch (error) {
+      setPacks(Object.entries(packSource).map(([id, plan]) => ({ id, ...plan })));
+      setSubscriptions(Object.entries(subscriptionSource).map(([id, plan]) => ({ id, ...plan })));
+    } catch {
       setPacks([]);
       setSubscriptions([]);
     } finally {
@@ -79,8 +61,7 @@ export default function Pricing() {
   };
 
   const handlePackPurchase = async (planId) => {
-    const token = localStorage.getItem("token");
-    if (!token) {
+    if (!localStorage.getItem("token")) {
       navigate("/signup");
       return;
     }
@@ -89,15 +70,14 @@ export default function Pricing() {
     try {
       const res = await API.post("/payments/create-order", { plan: planId });
       const { order_id, amount, currency, key_id, plan_name } = res.data;
-
-      const options = {
+      new window.Razorpay({
         key: key_id,
         amount,
         currency,
         name: "AI Sales OS",
         description: plan_name,
         order_id,
-        handler: async function (response) {
+        handler: async (response) => {
           const verifyRes = await API.post("/payments/verify", {
             razorpay_order_id: response.razorpay_order_id,
             razorpay_payment_id: response.razorpay_payment_id,
@@ -107,11 +87,9 @@ export default function Pricing() {
           alert(`${verifyRes.data.plan_name} unlocked. ${verifyRes.data.credits_added} credits added.`);
           navigate("/dashboard");
         },
-        theme: { color: "#7c3aed" },
-      };
-
-      new window.Razorpay(options).open();
-    } catch (error) {
+        theme: { color: "#0f172a" },
+      }).open();
+    } catch {
       alert("Could not start the purchase flow.");
     } finally {
       setLoading(null);
@@ -119,8 +97,7 @@ export default function Pricing() {
   };
 
   const handleSubscriptionPurchase = async (planId) => {
-    const token = localStorage.getItem("token");
-    if (!token) {
+    if (!localStorage.getItem("token")) {
       navigate("/signup");
       return;
     }
@@ -129,13 +106,14 @@ export default function Pricing() {
     try {
       const res = await API.post("/payments/create-subscription", { plan: planId });
       const { subscription_id, amount, currency, key_id, plan_name } = res.data;
-
-      const options = {
+      new window.Razorpay({
         key: key_id,
         subscription_id,
+        amount,
+        currency,
         name: "AI Sales OS",
         description: `${plan_name} subscription`,
-        handler: async function (response) {
+        handler: async (response) => {
           const verifyRes = await API.post("/payments/verify-subscription", {
             razorpay_payment_id: response.razorpay_payment_id,
             razorpay_subscription_id: response.razorpay_subscription_id,
@@ -145,13 +123,9 @@ export default function Pricing() {
           alert(`${verifyRes.data.plan_name} activated. ${verifyRes.data.credits_added} credits added for this cycle.`);
           navigate("/dashboard");
         },
-        theme: { color: "#7c3aed" },
-        amount,
-        currency,
-      };
-
-      new window.Razorpay(options).open();
-    } catch (error) {
+        theme: { color: "#0f172a" },
+      }).open();
+    } catch {
       alert("Could not start the subscription flow.");
     } finally {
       setLoading(null);
@@ -159,29 +133,22 @@ export default function Pricing() {
   };
 
   const renderCard = (plan, isSubscription = false) => (
-    <div
-      key={plan.id}
-      className={`border rounded-2xl p-8 relative flex flex-col ${
-        plan.id.includes("pro") ? "border-purple-500/50" : "border-white/10"
-      }`}
-    >
+    <div key={plan.id} className={`premium-card p-8 relative flex flex-col ${plan.id.includes("pro") ? "accent-ring" : ""}`}>
       {plan.id.includes("pro") && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-xs px-4 py-1 rounded-full">
-          {isSubscription ? "Best Recurring Offer" : "Best Launch Offer"}
+        <div className="absolute -top-3 left-6 hero-chip normal-case tracking-normal text-[11px]">
+          {isSubscription ? "Best recurring option" : "Best launch option"}
         </div>
       )}
 
       <div className="mb-6">
-        <h2 className="text-xl font-bold mb-2">{plan.name}</h2>
-        <div className="flex items-baseline gap-2">
-          <span className="text-4xl font-bold">{formatPrice(plan.price)}</span>
-          <span className="text-white/40 text-sm">
-            {isSubscription ? `per ${plan.interval}` : plan.billing_type === "free" ? "free" : "one-time"}
-          </span>
+        <div className="section-title mb-3">{isSubscription ? "Subscription" : "Credit Pack"}</div>
+        <h2 className="text-2xl font-semibold mb-2">{plan.name}</h2>
+        <div className="flex items-end gap-2 mb-2">
+          <span className="text-4xl font-semibold">{formatPrice(plan.price)}</span>
+          <span className="text-white/40 text-sm">{isSubscription ? `per ${plan.interval}` : plan.billing_type === "free" ? "free" : "one-time"}</span>
         </div>
-        <div className="text-white/40 text-sm mt-1">{plan.credits} AI credits{isSubscription ? " per cycle" : ""}</div>
-        <div className="text-white/50 text-sm mt-3">{plan.description}</div>
-        {plan.cta && <div className="text-purple-300 text-sm mt-3">{plan.cta}</div>}
+        <div className="text-sm text-white/40">{plan.credits} AI credits{isSubscription ? " per cycle" : ""}</div>
+        <div className="text-white/55 text-sm mt-4 leading-7">{plan.description}</div>
       </div>
 
       <div className="space-y-3 mb-8 flex-1">
@@ -193,21 +160,13 @@ export default function Pricing() {
       </div>
 
       <button
-        onClick={() =>
-          plan.id === "free"
-            ? null
-            : isSubscription
-              ? handleSubscriptionPurchase(plan.id)
-              : handlePackPurchase(plan.id)
-        }
+        onClick={() => {
+          if (plan.id === "free") return;
+          if (isSubscription) handleSubscriptionPurchase(plan.id);
+          else handlePackPurchase(plan.id);
+        }}
         disabled={loading === plan.id || plan.id === "free"}
-        className={`w-full py-3 rounded-lg font-semibold transition disabled:opacity-50 ${
-          plan.id.includes("pro")
-            ? "bg-purple-600 text-white hover:bg-purple-500"
-            : plan.id === "free"
-              ? "border border-white/20 text-white"
-              : "bg-white text-black hover:bg-white/90"
-        }`}
+        className={plan.id === "free" ? "button-secondary w-full" : "button-primary w-full disabled:opacity-50"}
       >
         {loading === plan.id
           ? "Processing..."
@@ -221,89 +180,71 @@ export default function Pricing() {
   );
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <nav className="flex items-center justify-between px-8 py-5 border-b border-white/10">
-        <div className="text-xl font-bold cursor-pointer" onClick={() => navigate("/")}>
+    <div className="min-h-screen app-shell text-white">
+      <nav className="page-frame flex items-center justify-between py-6">
+        <button className="text-xl font-bold" onClick={() => navigate("/")}>
           AI Sales OS
-        </div>
-        <button
-          onClick={() => navigate("/dashboard")}
-          className="px-4 py-2 text-sm text-white/70 hover:text-white transition"
-        >
-          Dashboard
+        </button>
+        <button onClick={() => navigate("/dashboard")} className="button-secondary text-sm">
+          Open dashboard
         </button>
       </nav>
 
-      <div className="text-center py-16 px-6">
-        <h1 className="text-4xl md:text-5xl font-bold mb-4">Pricing and Revenue Engine</h1>
-        <p className="text-white/40 text-lg max-w-2xl mx-auto">
-          Launch with one-time credit packs today, then grow into recurring AI revenue with monthly subscriptions.
-        </p>
-      </div>
+      <div className="page-frame py-10 md:py-16">
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <div className="hero-chip mb-5">Pricing</div>
+          <h1 className="headline-display text-5xl md:text-6xl font-semibold mb-5">Buy execution capacity, not seat-count bloat.</h1>
+          <p className="text-white/55 text-lg leading-8">
+            The value proposition is simple: your team gets an operating system that prioritizes deals, prepares meetings,
+            drafts follow-ups, and keeps execution moving.
+          </p>
+        </div>
 
-      <div className="max-w-6xl mx-auto px-6 pb-20 space-y-16">
         {plansLoading ? (
           <div className="text-white/40">Loading pricing...</div>
         ) : (
-          <>
+          <div className="space-y-16">
             <section>
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h2 className="text-2xl font-bold">Launch Packs</h2>
-                  <p className="text-white/40 text-sm mt-1">
-                    Simple one-time purchases for immediate monetization.
-                  </p>
-                </div>
+              <div className="mb-8">
+                <div className="section-title mb-3">Launch Packs</div>
+                <h2 className="text-3xl font-semibold mb-2">For solo sellers and early teams moving fast</h2>
+                <p className="text-white/45 text-sm">Start with credit packs while shaping your workflow and proving adoption.</p>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {[FREE_PLAN, ...packs].map((plan) => renderCard(plan, false))}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {[FREE_PLAN, ...packs].map((plan) => renderCard(plan))}
               </div>
             </section>
 
             <section>
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h2 className="text-2xl font-bold">Recurring Subscriptions</h2>
-                  <p className="text-white/40 text-sm mt-1">
-                    Monthly AI capacity for teams that want the platform running every day.
-                  </p>
-                </div>
+              <div className="mb-8">
+                <div className="section-title mb-3">Subscriptions</div>
+                <h2 className="text-3xl font-semibold mb-2">For teams that want the AI layer running every day</h2>
+                <p className="text-white/45 text-sm">Recurring plans keep the command center, meeting intelligence, and execution workflows always on.</p>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {subscriptions.map((plan) => renderCard(plan, true))}
               </div>
             </section>
-          </>
-        )}
 
-        <section>
-          <h2 className="text-2xl font-bold text-center mb-10">How to sell this</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[
-              {
-                q: "What am I buying?",
-                a: "You are buying a sales execution engine: AI credits for follow-ups, deal analysis, meeting intelligence, and coaching.",
-              },
-              {
-                q: "What is recurring here?",
-                a: "Subscriptions recharge AI capacity every billing cycle so reps can operate inside the platform continuously.",
-              },
-              {
-                q: "Why is this different from classic CRMs?",
-                a: "Because the product does not just store data. It prioritizes deals, drafts the move, and tells the rep exactly what to do next.",
-              },
-              {
-                q: "What should I say on demos?",
-                a: "Pitch it as an AI deal command center for reps and founders who want execution, not admin software.",
-              },
-            ].map((faq) => (
-              <div key={faq.q} className="border border-white/10 rounded-xl p-6">
-                <h3 className="font-semibold mb-2">{faq.q}</h3>
-                <p className="text-white/40 text-sm">{faq.a}</p>
+            <section className="premium-card p-8">
+              <div className="section-title mb-3">How to Position It</div>
+              <h2 className="text-3xl font-semibold mb-8">This product sells best as a revenue execution system.</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {[
+                  ["What am I buying?", "An AI operating layer for pipeline execution, not just lead storage."],
+                  ["Why is this different?", "It remembers the deal, prioritizes the next move, drafts the action, and keeps the rep in motion."],
+                  ["Who is it for?", "Founders, closers, and expansion teams who want sharp execution without enterprise CRM heaviness."],
+                  ["What should I say on demos?", "Pitch it as the AI workspace that helps revenue teams know what to do next and why."],
+                ].map(([q, a]) => (
+                  <div key={q} className="border border-white/10 rounded-2xl p-5">
+                    <div className="font-medium mb-2">{q}</div>
+                    <div className="text-sm text-white/55 leading-7">{a}</div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </section>
           </div>
-        </section>
+        )}
       </div>
     </div>
   );

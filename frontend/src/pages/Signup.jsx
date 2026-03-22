@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+
 import API from "../api/axios";
+import { useAuth } from "../context/AuthContext";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -14,18 +15,13 @@ export default function Signup() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+
     try {
-      // Signup
       await API.post("/auth/signup", form);
-      // Auto login after signup
       const loginData = new FormData();
       loginData.append("username", form.email);
       loginData.append("password", form.password);
@@ -40,80 +36,94 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="text-2xl font-bold">⚡ AI Sales OS</div>
-          <p className="text-white/40 mt-2 text-sm">Create your free account</p>
+    <div className="min-h-screen app-shell text-white flex items-center">
+      <div className="page-frame grid grid-cols-1 xl:grid-cols-[1fr_0.9fr] gap-10 py-10">
+        <div className="hidden xl:block">
+          <div className="hero-chip mb-6">Start Free</div>
+          <h1 className="headline-display text-5xl font-semibold leading-tight mb-5">
+            Stand up a better revenue system in minutes.
+          </h1>
+          <p className="text-white/60 text-lg leading-8 max-w-xl mb-8">
+            Create your workspace, bring in live opportunities, and let the AI start building context around every deal.
+          </p>
+
+          <div className="grid grid-cols-1 gap-4 max-w-xl">
+            {[
+              "Free launch credits to test real AI workflows",
+              "Customizable workspaces for different revenue roles",
+              "Lead memory, meeting intelligence, and execution queues out of the box",
+            ].map((item) => (
+              <div key={item} className="premium-card px-5 py-4 text-white/70">
+                {item}
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Card */}
-        <div className="border border-white/10 rounded-2xl p-8">
+        <div className="glass-panel rounded-[2rem] p-6 md:p-8 max-w-xl xl:ml-auto w-full">
+          <div className="mb-8">
+            <button onClick={() => navigate("/")} className="text-sm text-white/40 hover:text-white transition mb-5">
+              Back to home
+            </button>
+            <div className="section-title mb-3">Create Account</div>
+            <h2 className="text-3xl font-semibold mb-2">Launch your workspace</h2>
+            <p className="text-white/50 text-sm">Set up the operating system for your pipeline, deal memory, and next-best actions.</p>
+          </div>
+
           {error && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+            <div className="mb-5 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-300 text-sm">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-sm text-white/60 mb-1 block">Full Name</label>
+              <label className="text-sm text-white/60 mb-2 block">Full name</label>
               <input
                 type="text"
-                name="full_name"
                 value={form.full_name}
-                onChange={handleChange}
-                placeholder="John Doe"
+                onChange={(e) => setForm((current) => ({ ...current, full_name: e.target.value }))}
+                placeholder="Alex Morgan"
                 required
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-white/30 transition"
+                className="input-surface"
               />
             </div>
 
             <div>
-              <label className="text-sm text-white/60 mb-1 block">Email</label>
+              <label className="text-sm text-white/60 mb-2 block">Work email</label>
               <input
                 type="email"
-                name="email"
                 value={form.email}
-                onChange={handleChange}
-                placeholder="you@example.com"
+                onChange={(e) => setForm((current) => ({ ...current, email: e.target.value }))}
+                placeholder="alex@company.com"
                 required
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-white/30 transition"
+                className="input-surface"
               />
             </div>
 
             <div>
-              <label className="text-sm text-white/60 mb-1 block">Password</label>
+              <label className="text-sm text-white/60 mb-2 block">Password</label>
               <input
                 type="password"
-                name="password"
                 value={form.password}
-                onChange={handleChange}
-                placeholder="••••••••"
+                onChange={(e) => setForm((current) => ({ ...current, password: e.target.value }))}
+                placeholder="Create a strong password"
                 required
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-white/30 transition"
+                className="input-surface"
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-white text-black font-semibold rounded-lg hover:bg-white/90 transition disabled:opacity-50"
-            >
-              {loading ? "Creating account..." : "Create Account"}
+            <button type="submit" disabled={loading} className="button-primary w-full disabled:opacity-50">
+              {loading ? "Creating workspace..." : "Create free account"}
             </button>
           </form>
 
-          <p className="text-center text-white/40 text-sm mt-6">
+          <div className="text-sm text-white/45 mt-6">
             Already have an account?{" "}
-            <span
-              onClick={() => navigate("/login")}
-              className="text-white cursor-pointer hover:underline"
-            >
-              Login
-            </span>
-          </p>
+            <button onClick={() => navigate("/login")} className="text-white hover:underline">
+              Sign in
+            </button>
+          </div>
         </div>
       </div>
     </div>

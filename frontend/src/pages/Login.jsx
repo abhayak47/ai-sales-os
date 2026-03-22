@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+
 import API from "../api/axios";
+import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -10,14 +11,11 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+
     try {
       const loginData = new FormData();
       loginData.append("username", form.email);
@@ -33,67 +31,84 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="text-2xl font-bold">⚡ AI Sales OS</div>
-          <p className="text-white/40 mt-2 text-sm">Welcome back</p>
+    <div className="min-h-screen app-shell text-white flex items-center">
+      <div className="page-frame grid grid-cols-1 xl:grid-cols-[0.95fr_1.05fr] gap-10 py-10">
+        <div className="hidden xl:flex flex-col justify-between">
+          <div>
+            <div className="hero-chip mb-6">Welcome Back</div>
+            <h1 className="headline-display text-5xl font-semibold leading-tight mb-5">
+              Step back into the revenue workspace.
+            </h1>
+            <p className="text-white/60 text-lg leading-8 max-w-xl">
+              Open the command center, review what the AI knows about your deals, and continue executing without losing context.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {[
+              "Lead-aware AI that remembers the timeline",
+              "Role-based workspace layouts for founders, closers, and expansion teams",
+              "Execution-first workflows instead of passive CRM admin",
+            ].map((item) => (
+              <div key={item} className="premium-card px-5 py-4 text-white/70">
+                {item}
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Card */}
-        <div className="border border-white/10 rounded-2xl p-8">
+        <div className="glass-panel rounded-[2rem] p-6 md:p-8 max-w-xl xl:ml-auto w-full">
+          <div className="mb-8">
+            <button onClick={() => navigate("/")} className="text-sm text-white/40 hover:text-white transition mb-5">
+              Back to home
+            </button>
+            <div className="section-title mb-3">Login</div>
+            <h2 className="text-3xl font-semibold mb-2">Access your workspace</h2>
+            <p className="text-white/50 text-sm">Continue where your last deal review, meeting intel, or action queue left off.</p>
+          </div>
+
           {error && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+            <div className="mb-5 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-300 text-sm">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-sm text-white/60 mb-1 block">Email</label>
+              <label className="text-sm text-white/60 mb-2 block">Email</label>
               <input
                 type="email"
-                name="email"
                 value={form.email}
-                onChange={handleChange}
-                placeholder="you@example.com"
+                onChange={(e) => setForm((current) => ({ ...current, email: e.target.value }))}
+                placeholder="you@company.com"
                 required
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-white/30 transition"
+                className="input-surface"
               />
             </div>
 
             <div>
-              <label className="text-sm text-white/60 mb-1 block">Password</label>
+              <label className="text-sm text-white/60 mb-2 block">Password</label>
               <input
                 type="password"
-                name="password"
                 value={form.password}
-                onChange={handleChange}
-                placeholder="••••••••"
+                onChange={(e) => setForm((current) => ({ ...current, password: e.target.value }))}
+                placeholder="Enter your password"
                 required
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-white/30 transition"
+                className="input-surface"
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-white text-black font-semibold rounded-lg hover:bg-white/90 transition disabled:opacity-50"
-            >
-              {loading ? "Logging in..." : "Login"}
+            <button type="submit" disabled={loading} className="button-primary w-full disabled:opacity-50">
+              {loading ? "Signing you in..." : "Enter workspace"}
             </button>
           </form>
 
-          <p className="text-center text-white/40 text-sm mt-6">
-            Don't have an account?{" "}
-            <span
-              onClick={() => navigate("/signup")}
-              className="text-white cursor-pointer hover:underline"
-            >
-              Sign up free
-            </span>
-          </p>
+          <div className="text-sm text-white/45 mt-6">
+            New here?{" "}
+            <button onClick={() => navigate("/signup")} className="text-white hover:underline">
+              Create your account
+            </button>
+          </div>
         </div>
       </div>
     </div>

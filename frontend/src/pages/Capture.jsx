@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+
 import API from "../api/axios";
 
 export default function Capture() {
@@ -24,13 +25,9 @@ export default function Capture() {
     try {
       const res = await API.get(`/capture/user/${username}`);
       setOwnerName(res.data.name);
-    } catch (err) {
+    } catch {
       setNotFound(true);
     }
-  };
-
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
@@ -39,7 +36,7 @@ export default function Capture() {
     try {
       await API.post(`/capture/user/${username}`, form);
       setSubmitted(true);
-    } catch (err) {
+    } catch {
       alert("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
@@ -48,11 +45,11 @@ export default function Capture() {
 
   if (notFound) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-6xl mb-4">😕</div>
-          <h1 className="text-2xl font-bold mb-2">Page Not Found</h1>
-          <p className="text-white/40">This capture page doesn't exist.</p>
+      <div className="min-h-screen app-shell text-white flex items-center justify-center">
+        <div className="glass-panel rounded-[2rem] p-10 text-center max-w-lg mx-4">
+          <div className="section-title mb-3">Capture Page</div>
+          <h1 className="text-3xl font-semibold mb-3">This intake page is unavailable.</h1>
+          <p className="text-white/50 leading-7">The link may be invalid or no longer active.</p>
         </div>
       </div>
     );
@@ -60,120 +57,102 @@ export default function Capture() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-center max-w-md px-6">
-          <div className="text-6xl mb-6">🎉</div>
-          <h1 className="text-3xl font-bold mb-4">Thank You!</h1>
-          <p className="text-white/60 text-lg mb-2">
-            Your details have been submitted successfully.
-          </p>
-          <p className="text-white/40">
-            {ownerName} will be in touch with you soon.
-          </p>
-          <div className="mt-8 text-white/20 text-sm">
-            Powered by ⚡ AI Sales OS
-          </div>
+      <div className="min-h-screen app-shell text-white flex items-center justify-center">
+        <div className="glass-panel rounded-[2rem] p-10 text-center max-w-xl mx-4">
+          <div className="hero-chip mb-6">Submitted</div>
+          <h1 className="text-4xl font-semibold mb-4">Thanks, you’re in.</h1>
+          <p className="text-white/60 text-lg mb-2">Your details were submitted successfully.</p>
+          <p className="text-white/45 leading-7">{ownerName} will review this and reach out soon.</p>
+          <div className="text-sm text-white/25 mt-8">Powered by AI Sales OS</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="text-4xl mb-4">👋</div>
-          <h1 className="text-2xl font-bold mb-2">
-            Connect with {ownerName}
+    <div className="min-h-screen app-shell text-white flex items-center">
+      <div className="page-frame grid grid-cols-1 xl:grid-cols-[0.95fr_1.05fr] gap-10 py-10">
+        <div className="hidden xl:flex flex-col justify-center">
+          <div className="hero-chip mb-6">Lead Capture</div>
+          <h1 className="headline-display text-5xl font-semibold leading-tight mb-5">
+            Start the conversation with {ownerName || "the team"}.
           </h1>
-          <p className="text-white/40">
-            Fill in your details and we'll be in touch soon.
+          <p className="text-white/60 text-lg leading-8 max-w-xl">
+            This intake flow routes new opportunities straight into the revenue workspace so follow-up can start with context, not chaos.
           </p>
         </div>
 
-        {/* Form */}
-        <div className="border border-white/10 rounded-2xl p-8">
+        <div className="glass-panel rounded-[2rem] p-6 md:p-8 max-w-xl xl:ml-auto">
+          <div className="section-title mb-3">Tell us about your need</div>
+          <h2 className="text-3xl font-semibold mb-3">Connect with {ownerName || "the team"}</h2>
+          <p className="text-white/50 text-sm leading-7 mb-8">
+            Share a little context and we’ll route your request into the right conversation quickly.
+          </p>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-sm text-white/60 mb-1 block">
-                Full Name *
-              </label>
+              <label className="text-sm text-white/60 mb-2 block">Full name</label>
               <input
                 type="text"
-                name="name"
                 value={form.name}
-                onChange={handleChange}
-                placeholder="John Doe"
+                onChange={(e) => setForm((current) => ({ ...current, name: e.target.value }))}
                 required
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-white/30 transition"
+                placeholder="Alex Morgan"
+                className="input-surface"
               />
             </div>
 
-            <div>
-              <label className="text-sm text-white/60 mb-1 block">Email</label>
-              <input
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-                placeholder="john@example.com"
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-white/30 transition"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm text-white/60 mb-2 block">Email</label>
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm((current) => ({ ...current, email: e.target.value }))}
+                  placeholder="alex@company.com"
+                  className="input-surface"
+                />
+              </div>
+              <div>
+                <label className="text-sm text-white/60 mb-2 block">Phone</label>
+                <input
+                  type="text"
+                  value={form.phone}
+                  onChange={(e) => setForm((current) => ({ ...current, phone: e.target.value }))}
+                  placeholder="+91 98765 43210"
+                  className="input-surface"
+                />
+              </div>
             </div>
 
             <div>
-              <label className="text-sm text-white/60 mb-1 block">Phone</label>
-              <input
-                type="text"
-                name="phone"
-                value={form.phone}
-                onChange={handleChange}
-                placeholder="+91 98765 43210"
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-white/30 transition"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm text-white/60 mb-1 block">
-                Company
-              </label>
+              <label className="text-sm text-white/60 mb-2 block">Company</label>
               <input
                 type="text"
-                name="company"
                 value={form.company}
-                onChange={handleChange}
+                onChange={(e) => setForm((current) => ({ ...current, company: e.target.value }))}
                 placeholder="Acme Corp"
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-white/30 transition"
+                className="input-surface"
               />
             </div>
 
             <div>
-              <label className="text-sm text-white/60 mb-1 block">
-                Message / How can we help?
-              </label>
+              <label className="text-sm text-white/60 mb-2 block">What are you trying to solve?</label>
               <textarea
-                name="notes"
                 value={form.notes}
-                onChange={handleChange}
-                placeholder="Tell us about your needs..."
-                rows={3}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-white/30 transition resize-none"
+                onChange={(e) => setForm((current) => ({ ...current, notes: e.target.value }))}
+                rows={4}
+                placeholder="Tell us about your use case, timeline, or what you need help with."
+                className="input-surface resize-none"
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-white text-black font-semibold rounded-lg hover:bg-white/90 transition disabled:opacity-50"
-            >
-              {loading ? "Submitting..." : "Submit →"}
+            <button type="submit" disabled={loading} className="button-primary w-full disabled:opacity-50">
+              {loading ? "Submitting..." : "Submit details"}
             </button>
           </form>
-        </div>
 
-        <div className="text-center mt-6 text-white/20 text-sm">
-          Powered by ⚡ AI Sales OS
+          <div className="text-sm text-white/25 mt-6">Powered by AI Sales OS</div>
         </div>
       </div>
     </div>

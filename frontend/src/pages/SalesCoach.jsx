@@ -1,30 +1,21 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+
 import API from "../api/axios";
 import Sidebar from "../components/Sidebar";
 
 const SUGGESTED_QUESTIONS = [
-  "Which lead should I focus on today?",
-  "My client said the price is too high, what do I say?",
-  "Write me a cold email for a startup founder",
-  "How do I follow up without being annoying?",
-  "Analyze my pipeline and tell me what to do next",
-  "My lead went cold after 2 meetings, how do I re-engage?",
+  "Which lead deserves my attention first today?",
+  "How should I handle a pricing objection on an active deal?",
+  "What is the smartest next move for a buyer who went quiet after a strong meeting?",
+  "How do I reframe our value without sounding repetitive?",
 ];
 
 export default function SalesCoach() {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content: `Hey! 👋 I'm your AI Sales Coach. I know your entire pipeline and I'm here to help you close more deals.
-
-Ask me anything:
-- Which leads to prioritize today
-- How to handle objections
-- Write emails, WhatsApp messages, scripts
-- Analyze your pipeline
-- Get specific advice for any deal
-
-What's on your mind?`,
+      content:
+        "I’m your revenue coach. Ask for strategy, objection handling, pipeline prioritization, or a sharper message for any live deal.",
     },
   ]);
   const [input, setInput] = useState("");
@@ -40,43 +31,25 @@ What's on your mind?`,
     if (!messageText) return;
 
     const userMessage = { role: "user", content: messageText };
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
+    const nextMessages = [...messages, userMessage];
+    setMessages(nextMessages);
     setInput("");
     setLoading(true);
 
     try {
-      const chatHistory = newMessages
-        .slice(1)
-        .slice(-10)
-        .map((m) => ({ role: m.role, content: m.content }));
-
+      const chatHistory = nextMessages.slice(1).slice(-10).map((item) => ({ role: item.role, content: item.content }));
       const res = await API.post("/ai/coach", {
         message: messageText,
         chat_history: chatHistory.slice(0, -1),
       });
-
-      setMessages([
-        ...newMessages,
-        { role: "assistant", content: res.data.response },
-      ]);
+      setMessages([...nextMessages, { role: "assistant", content: res.data.response }]);
     } catch (err) {
       setMessages([
-        ...newMessages,
-        {
-          role: "assistant",
-          content: err.response?.data?.detail || "Something went wrong. Please try again.",
-        },
+        ...nextMessages,
+        { role: "assistant", content: err.response?.data?.detail || "Something went wrong. Please try again." },
       ]);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
     }
   };
 
@@ -84,87 +57,93 @@ What's on your mind?`,
     <div className="min-h-screen bg-black text-white flex">
       <Sidebar />
 
-      <div className="flex-1 flex flex-col mt-16 md:mt-0">
-        {/* Header */}
-        <div className="border-b border-white/10 px-4 md:px-8 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-base md:text-xl font-bold">🗣️ AI Sales Coach</h1>
-            <p className="text-white/40 text-xs md:text-sm">Your personal AI coach</p>
+      <div className="flex-1 mt-16 md:mt-0 p-4 md:p-8 overflow-y-auto">
+        <div className="page-frame">
+          <div className="glass-panel rounded-[2rem] p-6 md:p-8 mb-6">
+            <div className="section-title mb-3">AI Sales Coach</div>
+            <h1 className="text-3xl md:text-4xl font-semibold mb-3">A sharper strategy room for live deals.</h1>
+            <p className="text-white/55 text-sm md:text-base max-w-3xl leading-7">
+              Ask about active deals, objections, next steps, or messaging. The coach uses pipeline context so the advice is tied to your real opportunities.
+            </p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-            <span className="text-white/40 text-sm">Online</span>
-          </div>
-        </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 space-y-4">
-          {messages.map((msg, i) => (
-            <div key={i} className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0
-                ${msg.role === "user" ? "bg-white text-black" : "bg-purple-600 text-white"}`}>
-                {msg.role === "user" ? "Y" : "🧠"}
+          <div className="grid grid-cols-1 xl:grid-cols-[0.34fr_0.66fr] gap-6">
+            <div className="premium-card p-6 h-fit">
+              <div className="text-base font-semibold mb-4">Suggested prompts</div>
+              <div className="space-y-3">
+                {SUGGESTED_QUESTIONS.map((question) => (
+                  <button
+                    key={question}
+                    onClick={() => sendMessage(question)}
+                    className="w-full text-left border border-white/10 rounded-2xl px-4 py-4 text-sm text-white/70 hover:border-white/25 transition"
+                  >
+                    {question}
+                  </button>
+                ))}
               </div>
-              <div className={`max-w-xs md:max-w-2xl px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap
-                ${msg.role === "user"
-                  ? "bg-white/10 text-white rounded-tr-sm"
-                  : "bg-white/5 border border-white/10 text-white/80 rounded-tl-sm"
-                }`}>
-                {msg.content}
+              <div className="border border-white/10 rounded-2xl p-4 mt-5 text-sm text-white/55 leading-7">
+                Each message uses 1 AI credit and draws from the live pipeline context available to the coach.
               </div>
             </div>
-          ))}
 
-          {loading && (
-            <div className="flex gap-3">
-              <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-sm">🧠</div>
-              <div className="bg-white/5 border border-white/10 px-4 py-3 rounded-2xl rounded-tl-sm">
-                <div className="flex gap-1">
-                  {[0, 150, 300].map((delay) => (
-                    <div key={delay} className="w-2 h-2 bg-white/40 rounded-full animate-bounce"
-                      style={{ animationDelay: `${delay}ms` }} />
-                  ))}
+            <div className="premium-card p-5 md:p-6 flex flex-col min-h-[72vh]">
+              <div className="flex items-center justify-between gap-3 pb-4 border-b border-white/10">
+                <div>
+                  <div className="text-base font-semibold">Conversation</div>
+                  <div className="text-sm text-white/40 mt-1">Ask for message rewrites, strategy, or prioritization help.</div>
+                </div>
+                <div className="hero-chip normal-case tracking-normal text-[11px]">Context-aware</div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto py-5 space-y-4">
+                {messages.map((msg, index) => (
+                  <div key={`${msg.role}-${index}`} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                    <div className={`max-w-3xl px-4 py-4 rounded-2xl text-sm leading-7 whitespace-pre-wrap ${
+                      msg.role === "user"
+                        ? "bg-white text-black rounded-br-md"
+                        : "bg-white/5 border border-white/10 text-white/80 rounded-bl-md"
+                    }`}>
+                      {msg.content}
+                    </div>
+                  </div>
+                ))}
+
+                {loading && (
+                  <div className="flex justify-start">
+                    <div className="bg-white/5 border border-white/10 px-4 py-4 rounded-2xl rounded-bl-md">
+                      <div className="flex gap-2">
+                        {[0, 120, 240].map((delay) => (
+                          <div key={delay} className="w-2 h-2 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: `${delay}ms` }} />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              <div className="pt-4 border-t border-white/10">
+                <div className="flex gap-3">
+                  <textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                      }
+                    }}
+                    placeholder="Ask the coach how to move a deal, handle an objection, or sharpen a message..."
+                    rows={3}
+                    className="input-surface resize-none"
+                  />
+                  <button onClick={() => sendMessage()} disabled={loading || !input.trim()} className="button-primary h-fit self-end disabled:opacity-50">
+                    Send
+                  </button>
                 </div>
               </div>
             </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Suggested Questions */}
-        {messages.length === 1 && (
-          <div className="px-4 md:px-8 pb-3">
-            <div className="flex flex-wrap gap-2">
-              {SUGGESTED_QUESTIONS.map((q, i) => (
-                <button key={i} onClick={() => sendMessage(q)}
-                  className="text-xs px-3 py-2 border border-white/10 rounded-lg text-white/50 hover:text-white hover:border-white/30 transition">
-                  {q}
-                </button>
-              ))}
-            </div>
           </div>
-        )}
-
-        {/* Input */}
-        <div className="border-t border-white/10 px-4 md:px-8 py-4">
-          <div className="flex gap-3">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Ask anything... (Enter to send)"
-              rows={2}
-              className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-white/30 transition resize-none text-sm"
-            />
-            <button
-              onClick={() => sendMessage()}
-              disabled={loading || !input.trim()}
-              className="px-4 md:px-6 bg-white text-black font-semibold rounded-xl hover:bg-white/90 transition disabled:opacity-50 text-sm"
-            >
-              Send →
-            </button>
-          </div>
-          <p className="text-white/20 text-xs mt-2">Each message uses 1 AI credit</p>
         </div>
       </div>
     </div>

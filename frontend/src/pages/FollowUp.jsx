@@ -1,6 +1,19 @@
 import { useState } from "react";
+
 import API from "../api/axios";
 import Sidebar from "../components/Sidebar";
+
+function ResultCard({ title, children, actions }) {
+  return (
+    <div className="premium-card p-5">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+        <div className="text-base font-semibold">{title}</div>
+        <div className="flex gap-2">{actions}</div>
+      </div>
+      <div className="text-sm text-white/75 leading-7 whitespace-pre-wrap">{children}</div>
+    </div>
+  );
+}
 
 export default function FollowUp() {
   const [form, setForm] = useState({
@@ -12,10 +25,6 @@ export default function FollowUp() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
-
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,22 +44,7 @@ export default function FollowUp() {
   const copyText = (text, label) => {
     navigator.clipboard.writeText(text);
     setCopied(label);
-    setTimeout(() => setCopied(""), 2000);
-  };
-
-  const sendWhatsApp = (text) => {
-    const encoded = encodeURIComponent(text);
-    window.open(`https://wa.me/919689933549?text=${encoded}`, "_blank");
-  };
-
-  const sendEmail = (text) => {
-    const lines = text.split("\n");
-    const subject = lines[0].replace("Subject: ", "");
-    const body = lines.slice(2).join("\n");
-    window.open(
-      `mailto:abhaybk47@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,
-      "_blank"
-    );
+    setTimeout(() => setCopied(""), 1800);
   };
 
   return (
@@ -58,142 +52,125 @@ export default function FollowUp() {
       <Sidebar />
 
       <div className="flex-1 p-4 md:p-8 overflow-y-auto mt-16 md:mt-0">
-        <div className="max-w-3xl mx-auto">
-          <h1 className="text-xl md:text-2xl font-bold mb-2">🤖 AI Follow-Up Generator</h1>
-          <p className="text-white/40 text-sm mb-6">
-            Describe your sales situation and AI will generate the perfect follow-up.
-          </p>
+        <div className="page-frame">
+          <div className="glass-panel rounded-[2rem] p-6 md:p-8 mb-8">
+            <div className="section-title mb-3">AI Follow-Up</div>
+            <h1 className="text-3xl md:text-4xl font-semibold mb-3">Generate outreach that sounds like it belongs to this deal.</h1>
+            <p className="text-white/55 text-sm md:text-base max-w-3xl leading-7">
+              Give the AI the real sales context and it will return polished email, WhatsApp, and short-form follow-ups
+              that feel sharper and more decision-oriented.
+            </p>
+          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4 mb-8">
-            <div>
-              <label className="text-sm text-white/60 mb-1 block">Sales Context</label>
-              <textarea
-                name="context"
-                value={form.context}
-                onChange={handleChange}
-                placeholder="E.g. I met John at a networking event..."
-                required
-                rows={4}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-white/30 transition resize-none"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 xl:grid-cols-[0.92fr_1.08fr] gap-6">
+            <form onSubmit={handleSubmit} className="premium-card p-6 space-y-4 h-fit">
               <div>
-                <label className="text-sm text-white/60 mb-1 block">Client Type</label>
-                <select
-                  name="client_type"
-                  value={form.client_type}
-                  onChange={handleChange}
+                <label className="text-sm text-white/60 mb-2 block">Sales context</label>
+                <textarea
+                  value={form.context}
+                  onChange={(e) => setForm((current) => ({ ...current, context: e.target.value }))}
+                  placeholder="We spoke after a discovery call. They are interested, but need confidence around implementation speed and fit."
                   required
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white/30 transition"
-                >
-                  <option value="" className="bg-black">Select type</option>
-                  <option value="Startup Founder" className="bg-black">Startup Founder</option>
-                  <option value="Agency Owner" className="bg-black">Agency Owner</option>
-                  <option value="Enterprise" className="bg-black">Enterprise</option>
-                  <option value="Freelancer" className="bg-black">Freelancer</option>
-                  <option value="SMB Owner" className="bg-black">SMB Owner</option>
-                </select>
+                  rows={6}
+                  className="input-surface resize-none"
+                />
               </div>
-              <div>
-                <label className="text-sm text-white/60 mb-1 block">Tone</label>
-                <select
-                  name="tone"
-                  value={form.tone}
-                  onChange={handleChange}
-                  required
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white/30 transition"
-                >
-                  <option value="" className="bg-black">Select tone</option>
-                  <option value="Professional" className="bg-black">Professional</option>
-                  <option value="Friendly" className="bg-black">Friendly</option>
-                  <option value="Confident" className="bg-black">Confident</option>
-                  <option value="Casual" className="bg-black">Casual</option>
-                  <option value="Urgent" className="bg-black">Urgent</option>
-                </select>
-              </div>
-            </div>
 
-            {error && (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-white text-black font-semibold rounded-lg hover:bg-white/90 transition disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {loading ? <><span className="animate-spin">⚡</span> Generating...</> : "Generate Follow-Up Messages"}
-            </button>
-          </form>
-
-          {result && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold">✅ Generated Messages</h2>
-
-              {/* Email */}
-              <div className="border border-white/10 rounded-xl p-5">
-                <div className="flex flex-col md:flex-row md:items-center justify-between mb-3 gap-2">
-                  <span className="text-sm font-medium">📧 Email</span>
-                  <div className="flex gap-2">
-                    <button onClick={() => sendEmail(result.email)}
-                      className="text-xs px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-400 hover:bg-blue-500/20 transition">
-                      📧 Open in Mail
-                    </button>
-                    <button onClick={() => copyText(result.email, "email")}
-                      className="text-xs px-3 py-1 border border-white/10 rounded-lg text-white/40 hover:text-white transition">
-                      {copied === "email" ? "✅ Copied!" : "Copy"}
-                    </button>
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm text-white/60 mb-2 block">Client type</label>
+                  <select
+                    value={form.client_type}
+                    onChange={(e) => setForm((current) => ({ ...current, client_type: e.target.value }))}
+                    required
+                    className="input-surface"
+                  >
+                    <option value="" className="bg-black">Select type</option>
+                    <option value="Startup Founder" className="bg-black">Startup Founder</option>
+                    <option value="Agency Owner" className="bg-black">Agency Owner</option>
+                    <option value="Enterprise Buyer" className="bg-black">Enterprise Buyer</option>
+                    <option value="SMB Owner" className="bg-black">SMB Owner</option>
+                    <option value="Channel Partner" className="bg-black">Channel Partner</option>
+                  </select>
                 </div>
-                <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">{result.email}</p>
-              </div>
 
-              {/* WhatsApp */}
-              <div className="border border-white/10 rounded-xl p-5">
-                <div className="flex flex-col md:flex-row md:items-center justify-between mb-3 gap-2">
-                  <span className="text-sm font-medium">💬 WhatsApp</span>
-                  <div className="flex gap-2">
-                    <button onClick={() => sendWhatsApp(result.whatsapp)}
-                      className="text-xs px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400 hover:bg-green-500/20 transition">
-                      📱 Send on WhatsApp
-                    </button>
-                    <button onClick={() => copyText(result.whatsapp, "whatsapp")}
-                      className="text-xs px-3 py-1 border border-white/10 rounded-lg text-white/40 hover:text-white transition">
-                      {copied === "whatsapp" ? "✅ Copied!" : "Copy"}
-                    </button>
-                  </div>
+                <div>
+                  <label className="text-sm text-white/60 mb-2 block">Tone</label>
+                  <select
+                    value={form.tone}
+                    onChange={(e) => setForm((current) => ({ ...current, tone: e.target.value }))}
+                    required
+                    className="input-surface"
+                  >
+                    <option value="" className="bg-black">Select tone</option>
+                    <option value="Professional" className="bg-black">Professional</option>
+                    <option value="Friendly" className="bg-black">Friendly</option>
+                    <option value="Confident" className="bg-black">Confident</option>
+                    <option value="Consultative" className="bg-black">Consultative</option>
+                    <option value="Urgent" className="bg-black">Urgent</option>
+                  </select>
                 </div>
-                <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">{result.whatsapp}</p>
               </div>
 
-              {/* One-liner */}
-              <div className="border border-white/10 rounded-xl p-5">
-                <div className="flex flex-col md:flex-row md:items-center justify-between mb-3 gap-2">
-                  <span className="text-sm font-medium">⚡ One-Liner</span>
-                  <div className="flex gap-2">
-                    <button onClick={() => sendWhatsApp(result.short)}
-                      className="text-xs px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400 hover:bg-green-500/20 transition">
-                      📱 Send on WhatsApp
-                    </button>
-                    <button onClick={() => copyText(result.short, "short")}
-                      className="text-xs px-3 py-1 border border-white/10 rounded-lg text-white/40 hover:text-white transition">
-                      {copied === "short" ? "✅ Copied!" : "Copy"}
-                    </button>
-                  </div>
+              {error && (
+                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-300 text-sm">
+                  {error}
                 </div>
-                <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">{result.short}</p>
-              </div>
+              )}
 
-              <button onClick={() => setResult(null)}
-                className="w-full py-3 border border-white/10 rounded-lg text-white/40 hover:text-white hover:border-white/30 transition text-sm">
-                Generate New Messages
+              <button type="submit" disabled={loading} className="button-primary w-full disabled:opacity-50">
+                {loading ? "Generating follow-up..." : "Generate follow-up pack"}
               </button>
+            </form>
+
+            <div className="space-y-4">
+              {!result ? (
+                <div className="premium-card p-6">
+                  <div className="text-base font-semibold mb-3">What you will get</div>
+                  <div className="space-y-3 text-sm text-white/60 leading-7">
+                    <div>A full email with subject and body.</div>
+                    <div>A WhatsApp message built for faster reply rates.</div>
+                    <div>A one-liner that creates urgency without sounding generic.</div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <ResultCard
+                    title="Email"
+                    actions={
+                      <button onClick={() => copyText(result.email, "email")} className="button-secondary text-xs px-3 py-2">
+                        {copied === "email" ? "Copied" : "Copy"}
+                      </button>
+                    }
+                  >
+                    {result.email}
+                  </ResultCard>
+
+                  <ResultCard
+                    title="WhatsApp"
+                    actions={
+                      <button onClick={() => copyText(result.whatsapp, "whatsapp")} className="button-secondary text-xs px-3 py-2">
+                        {copied === "whatsapp" ? "Copied" : "Copy"}
+                      </button>
+                    }
+                  >
+                    {result.whatsapp}
+                  </ResultCard>
+
+                  <ResultCard
+                    title="One-Liner"
+                    actions={
+                      <button onClick={() => copyText(result.short, "short")} className="button-secondary text-xs px-3 py-2">
+                        {copied === "short" ? "Copied" : "Copy"}
+                      </button>
+                    }
+                  >
+                    {result.short}
+                  </ResultCard>
+                </>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
