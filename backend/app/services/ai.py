@@ -358,3 +358,70 @@ Return ONLY valid JSON:
 }}
 """
     return _json_completion(prompt, temperature=0.5, max_tokens=1000)
+
+
+def generate_execution_plan(lead_name: str, company: str, status: str, context: str) -> dict:
+    prompt = f"""
+You are an elite revenue operator. Turn this deal into an executable workflow.
+
+Lead: {lead_name}
+Company: {company}
+Stage: {status}
+Context:
+{context}
+
+Return ONLY valid JSON:
+{{
+  "execution_summary": "<how to drive this deal over the next few days>",
+  "tasks": [
+    {{
+      "title": "<task title>",
+      "description": "<clear execution detail>",
+      "priority": "<critical/high/medium/low>",
+      "timing": "<Today/Tomorrow/In 2 days/This week>"
+    }},
+    {{
+      "title": "<task title>",
+      "description": "<clear execution detail>",
+      "priority": "<critical/high/medium/low>",
+      "timing": "<Today/Tomorrow/In 2 days/This week>"
+    }},
+    {{
+      "title": "<task title>",
+      "description": "<clear execution detail>",
+      "priority": "<critical/high/medium/low>",
+      "timing": "<Today/Tomorrow/In 2 days/This week>"
+    }}
+  ],
+  "follow_up": {{
+    "channel": "<Email/WhatsApp/Call/LinkedIn>",
+    "timing": "<when to send>",
+    "subject": "<subject or opening line>",
+    "message": "<ready-to-use outreach>"
+  }},
+  "sequence": [
+    {{
+      "step": 1,
+      "channel": "<Email/WhatsApp/Call/LinkedIn>",
+      "timing": "<when>",
+      "objective": "<goal>",
+      "message": "<message>"
+    }},
+    {{
+      "step": 2,
+      "channel": "<Email/WhatsApp/Call/LinkedIn>",
+      "timing": "<when>",
+      "objective": "<goal>",
+      "message": "<message>"
+    }},
+    {{
+      "step": 3,
+      "channel": "<Email/WhatsApp/Call/LinkedIn>",
+      "timing": "<when>",
+      "objective": "<goal>",
+      "message": "<message>"
+    }}
+  ]
+}}
+"""
+    return _json_completion(prompt, temperature=0.55, max_tokens=1600)

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import API from "../api/axios";
 import ActionQueue from "../components/ActionQueue";
 import DealRisks from "../components/DealRisks";
+import ExecutionQueue from "../components/ExecutionQueue";
 import Sidebar from "../components/Sidebar";
 import TodayFocus from "../components/TodayFocus";
 
@@ -98,6 +99,9 @@ export default function Dashboard() {
         </div>
 
         <ActionQueue />
+        <div className="mb-4">
+          <ExecutionQueue compact />
+        </div>
         <DealRisks />
 
         <div className="mb-4">

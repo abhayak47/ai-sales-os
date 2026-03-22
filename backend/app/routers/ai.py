@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -5,10 +7,12 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.activity import Activity
 from app.models.lead import Lead
+from app.models.task import Task
 from app.schemas.ai import (
     DealStrategyResponse,
     EmailSequenceRequest,
     EmailSequenceResponse,
+    ExecutionPlanResponse,
     FollowUpRequest,
     FollowUpResponse,
     LeadAnalysisRequest,
@@ -29,6 +33,7 @@ from app.services.ai import (
     analyze_meeting_notes,
     generate_deal_strategy,
     generate_email_sequence,
+    generate_execution_plan,
     generate_followup,
     generate_meeting_prep,
     generate_objection_playbook,
@@ -54,6 +59,7 @@ CREDIT_COSTS = {
     "revival_campaign": 3,
     "stakeholder_map": 2,
     "meeting_prep": 2,
+    "execution_plan": 4,
 }
 
 
@@ -80,6 +86,22 @@ def _build_lead_context(lead: Lead, db: Session) -> str:
         .limit(8)
         .all()
     )
+
+
+def _resolve_due_at(timing: str):
+    now = datetime.utcnow()
+    normalized = (timing or "").strip().lower()
+    if "today" in normalized or "within" in normalized:
+        return now + timedelta(hours=2)
+    if "tomorrow" in normalized:
+        return now + timedelta(days=1)
+    if "2 day" in normalized:
+        return now + timedelta(days=2)
+    if "3 day" in normalized:
+        return now + timedelta(days=3)
+    if "week" in normalized:
+        return now + timedelta(days=5)
+    return now + timedelta(days=1)
 
     activity_lines = []
     for activity in reversed(activities):
@@ -410,4 +432,81 @@ def meeting_prep_endpoint(
     except Exception as exc:
         _refund_credits(db, user, CREDIT_COSTS["meeting_prep"])
         raise HTTPException(status_code=500, detail=f"AI error: {str(exc)}")
+    return result
+
+
+@router.post("/activate-execution", response_model=ExecutionPlanResponse)
+def activate_execution_endpoint(
+    request: LeadContextRequest,
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(token, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    lead = _get_owned_lead(request.lead_id, user.id, db)
+    if not deduct_credits(db, user, "execution_plan", CREDIT_COSTS["execution_plan"]):
+        raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['execution_plan']} credits. Please upgrade.")
+
+    try:
+        result = generate_execution_plan(
+            lead_name=lead.name,
+            company=lead.company or "Unknown",
+            status=lead.status,
+            context=_build_lead_context(lead, db),
+        )
+
+        db.query(Task).filter(
+            Task.user_id == user.id,
+            Task.lead_id == lead.id,
+            Task.status != "completed",
+            Task.kind.in_(["task", "follow_up", "sequence_step"]),
+        ).delete(synchronize_session=False)
+
+        for item in result["tasks"]:
+            db.add(Task(
+                user_id=user.id,
+                lead_id=lead.id,
+                kind="task",
+                title=item["title"],
+                description=item["description"],
+                priority=item["priority"],
+                due_at=_resolve_due_at(item["timing"]),
+            ))
+
+        follow_up = result["follow_up"]
+        db.add(Task(
+            user_id=user.id,
+            lead_id=lead.id,
+            kind="follow_up",
+            title=f"Send {follow_up['channel']} follow-up",
+            description=f"Scheduled {follow_up['timing']}",
+            priority="high",
+            channel=follow_up["channel"],
+            subject=follow_up["subject"],
+            content=follow_up["message"],
+            due_at=_resolve_due_at(follow_up["timing"]),
+        ))
+
+        for step in result["sequence"]:
+            db.add(Task(
+                user_id=user.id,
+                lead_id=lead.id,
+                kind="sequence_step",
+                title=f"Sequence step {step['step']}: {step['channel']}",
+                description=step["objective"],
+                priority="medium" if step["step"] > 1 else "high",
+                channel=step["channel"],
+                content=step["message"],
+                due_at=_resolve_due_at(step["timing"]),
+                sequence_step=step["step"],
+            ))
+
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        _refund_credits(db, user, CREDIT_COSTS["execution_plan"])
+        raise HTTPException(status_code=500, detail=f"AI error: {str(exc)}")
+
     return result

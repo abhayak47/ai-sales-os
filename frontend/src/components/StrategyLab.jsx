@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import API from "../api/axios";
+import ExecutionQueue from "./ExecutionQueue";
 
 const TOOL_CONFIG = {
   dealStrategy: {
@@ -65,6 +66,8 @@ export default function StrategyLab({ leadId }) {
   const [loadingTool, setLoadingTool] = useState("");
   const [error, setError] = useState("");
   const [objection, setObjection] = useState("");
+  const [executionPlan, setExecutionPlan] = useState(null);
+  const [executionRefreshKey, setExecutionRefreshKey] = useState(0);
   const [outputs, setOutputs] = useState({
     dealStrategy: null,
     objectionPlaybook: null,
@@ -83,6 +86,21 @@ export default function StrategyLab({ leadId }) {
       setOutputs((current) => ({ ...current, [toolId]: res.data }));
     } catch (err) {
       setError(err.response?.data?.detail || "Could not generate AI strategy.");
+    } finally {
+      setLoadingTool("");
+    }
+  };
+
+  const activateExecution = async () => {
+    setLoadingTool("executionPlan");
+    setError("");
+
+    try {
+      const res = await API.post("/ai/activate-execution", { lead_id: Number(leadId) });
+      setExecutionPlan(res.data);
+      setExecutionRefreshKey((value) => value + 1);
+    } catch (err) {
+      setError(err.response?.data?.detail || "Could not activate execution workflow.");
     } finally {
       setLoadingTool("");
     }
@@ -128,6 +146,44 @@ export default function StrategyLab({ leadId }) {
       )}
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <SectionCard
+          title="Execution Engine"
+          action={
+            <button
+              onClick={activateExecution}
+              disabled={loadingTool === "executionPlan"}
+              className="px-4 py-2 rounded-lg bg-emerald-400 text-black text-sm font-semibold disabled:opacity-50"
+            >
+              {loadingTool === "executionPlan" ? "Activating..." : "Activate Workflow (4 credits)"}
+            </button>
+          }
+        >
+          {executionPlan ? (
+            <div className="space-y-4 text-sm">
+              <div className="border border-emerald-500/20 rounded-xl p-4 bg-emerald-500/5">
+                <div className="text-white/40 mb-2">Execution Summary</div>
+                <p className="text-white/85">{executionPlan.execution_summary}</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ListBlock title="Execution Tasks" items={executionPlan.tasks.map((item) => `${item.title} (${item.timing})`)} />
+                <ListBlock title="Sequence Channels" items={executionPlan.sequence.map((item) => `Step ${item.step}: ${item.channel} - ${item.timing}`)} />
+              </div>
+              <div className="border border-white/10 rounded-xl p-4">
+                <div className="text-white/40 mb-2">Primary Follow-Up</div>
+                <div className="text-cyan-300 text-xs mb-2">
+                  {executionPlan.follow_up.channel} | {executionPlan.follow_up.timing}
+                </div>
+                <div className="text-sm text-white/80 mb-2">{executionPlan.follow_up.subject}</div>
+                <div className="text-sm text-white/75 whitespace-pre-wrap">{executionPlan.follow_up.message}</div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-white/45 text-sm">
+              One click converts strategy into a live execution plan with saved tasks, a drafted follow-up, and a multi-step sequence.
+            </p>
+          )}
+        </SectionCard>
+
         <SectionCard
           title="Deal Strategy"
           action={
@@ -327,6 +383,8 @@ export default function StrategyLab({ leadId }) {
           )}
         </SectionCard>
       </div>
+
+      <ExecutionQueue leadId={leadId} refreshKey={executionRefreshKey} />
     </div>
   );
 }

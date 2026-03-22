@@ -4,8 +4,8 @@ from sqlalchemy import inspect, text
 
 from app.config import settings
 from app.database import Base, engine
-from app.routers import auth, ai, leads, payments, dashboard, capture, activities
-from app.models import user, lead, credits, activity, billing
+from app.routers import auth, ai, leads, payments, dashboard, capture, activities, tasks
+from app.models import user, lead, credits, activity, billing, task
 
 
 SQLITE_COMPAT_COLUMNS = {
@@ -78,6 +78,7 @@ app.include_router(payments.router)
 app.include_router(dashboard.router)
 app.include_router(capture.router)
 app.include_router(activities.router)
+app.include_router(tasks.router)
 
 @app.get("/")
 def root():

@@ -120,3 +120,32 @@ class MeetingPrepResponse(BaseModel):
     strategic_questions: List[str]
     red_flags: List[str]
     close_plan: List[str]
+
+
+class ExecutionTask(BaseModel):
+    title: str
+    description: str
+    priority: str
+    timing: str
+
+
+class ExecutionFollowUp(BaseModel):
+    channel: str
+    timing: str
+    subject: str
+    message: str
+
+
+class ExecutionSequenceStep(BaseModel):
+    step: int
+    channel: str
+    timing: str
+    objective: str
+    message: str
+
+
+class ExecutionPlanResponse(BaseModel):
+    execution_summary: str
+    tasks: List[ExecutionTask]
+    follow_up: ExecutionFollowUp
+    sequence: List[ExecutionSequenceStep]
