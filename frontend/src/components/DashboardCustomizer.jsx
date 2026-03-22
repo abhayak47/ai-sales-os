@@ -1,5 +1,6 @@
 const SECTION_OPTIONS = [
   { key: "stats", label: "KPI strip", description: "Top-line metrics and pipeline pulse." },
+  { key: "workspacePulse", label: "Workspace pulse", description: "Workspace identity, coverage, and operating scope." },
   { key: "savedViews", label: "Saved views", description: "Quick access to high-value lead segments." },
   { key: "priorityPlays", label: "Priority plays", description: "AI-ranked deal moves from command center." },
   { key: "todayFocus", label: "Today focus", description: "Daily operating shortlist." },

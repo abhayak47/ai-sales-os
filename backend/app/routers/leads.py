@@ -2,7 +2,7 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy import or_
+from sqlalchemy import String, cast, or_
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -22,13 +22,25 @@ def get_user(token: str, db: Session):
     return user
 
 
-def _base_query(user_id: int, db: Session):
-    return db.query(Lead).filter(Lead.user_id == user_id)
+def _normalize_tags(tags: list[str] | None):
+    return sorted({tag.strip() for tag in (tags or []) if tag and tag.strip()})
 
 
-def _apply_filters(query, search: str | None, status: str | None):
+def _base_query(user, db: Session):
+    if getattr(user, "organization_id", None):
+        return db.query(Lead).filter(Lead.organization_id == user.organization_id)
+    return db.query(Lead).filter(Lead.user_id == user.id)
+
+
+def _apply_filters(query, search: str | None, status: str | None, segment: str | None, tag: str | None):
     if status and status != "All":
         query = query.filter(Lead.status == status)
+    if segment and segment != "All":
+        query = query.filter(Lead.segment == segment)
+    if tag:
+        normalized_tag = tag.strip().lower()
+        if normalized_tag:
+            query = query.filter(cast(Lead.tags, String).ilike(f'%"{normalized_tag}"%'))
     if search:
         pattern = f"%{search.strip()}%"
         query = query.filter(
@@ -85,8 +97,8 @@ def _apply_sort(query, sort_by: str, sort_dir: str):
     return query.order_by(ordered, Lead.id.desc())
 
 
-def _build_summary(user_id: int, db: Session):
-    leads = _base_query(user_id, db).all()
+def _build_summary(user, db: Session):
+    leads = _base_query(user, db).all()
     return {
         "total": len(leads),
         "new": len([lead for lead in leads if lead.status == "New"]),
@@ -105,8 +117,8 @@ def _build_summary(user_id: int, db: Session):
     }
 
 
-def _build_saved_views(user_id: int, db: Session):
-    base = _base_query(user_id, db)
+def _build_saved_views(user, db: Session):
+    base = _base_query(user, db)
     hot_deals = _apply_saved_view(base, "hot_deals").count()
     needs_follow_up = _apply_saved_view(base, "needs_follow_up").count()
     decision_this_week = _apply_saved_view(base, "decision_this_week").count()
@@ -143,6 +155,8 @@ def _build_saved_views(user_id: int, db: Session):
 def get_leads(
     search: str | None = None,
     status: str | None = None,
+    segment: str | None = None,
+    tag: str | None = None,
     view: str | None = None,
     sort_by: Literal["updated_at", "created_at", "last_activity_at", "score", "revenue", "name", "company", "status"] = "updated_at",
     sort_dir: Literal["asc", "desc"] = "desc",
@@ -152,7 +166,7 @@ def get_leads(
     db: Session = Depends(get_db),
 ):
     user = get_user(token, db)
-    filtered_query = _apply_saved_view(_apply_filters(_base_query(user.id, db), search, status), view)
+    filtered_query = _apply_saved_view(_apply_filters(_base_query(user, db), search, status, segment, tag), view)
     total = filtered_query.count()
     items = (
         _apply_sort(filtered_query, sort_by, sort_dir)
@@ -171,11 +185,13 @@ def get_leads(
             "total_pages": total_pages,
             "search": search,
             "status": status,
+            "segment": segment,
+            "tag": tag,
             "view": view,
             "sort_by": sort_by,
             "sort_dir": sort_dir,
         },
-        "summary": _build_summary(user.id, db),
+        "summary": _build_summary(user, db),
     }
 
 
@@ -185,7 +201,7 @@ def get_saved_views(
     db: Session = Depends(get_db),
 ):
     user = get_user(token, db)
-    return {"views": _build_saved_views(user.id, db)}
+    return {"views": _build_saved_views(user, db)}
 
 
 @router.get("/{lead_id}", response_model=LeadResponse)
@@ -195,7 +211,7 @@ def get_lead(
     db: Session = Depends(get_db),
 ):
     user = get_user(token, db)
-    lead = db.query(Lead).filter(Lead.id == lead_id, Lead.user_id == user.id).first()
+    lead = _base_query(user, db).filter(Lead.id == lead_id).first()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
     return lead
@@ -208,7 +224,15 @@ def create_lead(
     db: Session = Depends(get_db),
 ):
     user = get_user(token, db)
-    new_lead = Lead(**lead.dict(), user_id=user.id)
+    payload = lead.dict()
+    payload["segment"] = payload.get("segment") or "general"
+    payload["tags"] = _normalize_tags(payload.get("tags"))
+    new_lead = Lead(
+        **payload,
+        user_id=user.id,
+        organization_id=getattr(user, "organization_id", None),
+        owner_user_id=user.id,
+    )
     db.add(new_lead)
     db.commit()
     db.refresh(new_lead)
@@ -223,10 +247,15 @@ def update_lead(
     db: Session = Depends(get_db),
 ):
     user = get_user(token, db)
-    lead = db.query(Lead).filter(Lead.id == lead_id, Lead.user_id == user.id).first()
+    lead = _base_query(user, db).filter(Lead.id == lead_id).first()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
-    for key, value in lead_data.dict(exclude_unset=True).items():
+    updates = lead_data.dict(exclude_unset=True)
+    if "tags" in updates:
+        updates["tags"] = _normalize_tags(updates.get("tags"))
+    if "segment" in updates and not updates.get("segment"):
+        updates["segment"] = "general"
+    for key, value in updates.items():
         setattr(lead, key, value)
     db.commit()
     db.refresh(lead)
@@ -240,7 +269,7 @@ def delete_lead(
     db: Session = Depends(get_db),
 ):
     user = get_user(token, db)
-    lead = db.query(Lead).filter(Lead.id == lead_id, Lead.user_id == user.id).first()
+    lead = _base_query(user, db).filter(Lead.id == lead_id).first()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
     db.delete(lead)
@@ -255,7 +284,7 @@ def calculate_health(
     db: Session = Depends(get_db),
 ):
     user = get_user(token, db)
-    lead = db.query(Lead).filter(Lead.id == lead_id, Lead.user_id == user.id).first()
+    lead = _base_query(user, db).filter(Lead.id == lead_id).first()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
 

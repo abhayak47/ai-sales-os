@@ -37,8 +37,12 @@ function ThemePicker() {
 export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const workspaceName = user?.organization_name || "Personal workspace";
+  const workspaceSlug = user?.organization_slug ? `/${user.organization_slug}` : null;
+  const roleLabel = user?.role ? `${user.role.charAt(0).toUpperCase()}${user.role.slice(1)}` : "Owner";
 
   const handleLogout = () => {
     logout();
@@ -66,6 +70,15 @@ export default function Sidebar() {
 
       <div className={`md:hidden fixed top-0 left-0 h-full w-72 z-50 ${shellClass} p-6 flex flex-col transform transition-transform duration-300 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="text-xl font-bold mb-8 mt-2">AI Sales OS</div>
+        {user && (
+          <div className="border border-white/10 rounded-2xl p-4 bg-white/[0.02] mb-6">
+            <div className="text-[11px] uppercase tracking-[0.2em] text-white/35 mb-2">Workspace</div>
+            <div className="font-semibold text-white">{workspaceName}</div>
+            <div className="text-xs text-white/45 mt-1">{roleLabel} · {user.plan || "free"} plan</div>
+            <div className="text-xs text-white/35 mt-3 truncate">{workspaceSlug || user.email}</div>
+            <div className="mt-3 text-xs text-cyan-200">{user.ai_credits || 0} AI credits live</div>
+          </div>
+        )}
         <nav className="flex flex-col gap-1 flex-1">
           {NAV_ITEMS.map((item) => (
             <button
@@ -98,6 +111,15 @@ export default function Sidebar() {
           <div className="text-xl font-bold">AI Sales OS</div>
           <div className="text-sm text-white/35 mt-2">Revenue operating system</div>
         </div>
+        {user && (
+          <div className="border border-white/10 rounded-2xl p-4 bg-white/[0.02] mb-6">
+            <div className="text-[11px] uppercase tracking-[0.2em] text-white/35 mb-2">Workspace</div>
+            <div className="font-semibold text-white">{workspaceName}</div>
+            <div className="text-xs text-white/45 mt-1">{roleLabel} · {user.plan || "free"} plan</div>
+            <div className="text-xs text-white/35 mt-3 truncate">{workspaceSlug || user.email}</div>
+            <div className="mt-3 text-xs text-cyan-200">{user.ai_credits || 0} AI credits live</div>
+          </div>
+        )}
         <nav className="flex flex-col gap-1 flex-1">
           {NAV_ITEMS.map((item) => (
             <button

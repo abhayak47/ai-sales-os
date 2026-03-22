@@ -5,12 +5,15 @@ from sqlalchemy import inspect, text
 from app.config import settings
 from app.database import Base, engine
 from app.routers import auth, ai, leads, payments, dashboard, capture, activities, tasks, memory
-from app.models import user, lead, credits, activity, billing, task, lead_memory
+from app.models import activity, billing, credits, lead, lead_memory, organization, task, user
 
 
 SQLITE_COMPAT_COLUMNS = {
     "users": {
+        "organization_id": "ALTER TABLE users ADD COLUMN organization_id INTEGER",
         "plan": "ALTER TABLE users ADD COLUMN plan VARCHAR DEFAULT 'free'",
+        "role": "ALTER TABLE users ADD COLUMN role VARCHAR DEFAULT 'owner'",
+        "job_title": "ALTER TABLE users ADD COLUMN job_title VARCHAR",
         "ai_credits": "ALTER TABLE users ADD COLUMN ai_credits INTEGER DEFAULT 25",
         "subscription_status": "ALTER TABLE users ADD COLUMN subscription_status VARCHAR DEFAULT 'inactive'",
         "subscription_plan": "ALTER TABLE users ADD COLUMN subscription_plan VARCHAR",
@@ -22,11 +25,15 @@ SQLITE_COMPAT_COLUMNS = {
         "updated_at": "ALTER TABLE users ADD COLUMN updated_at DATETIME",
     },
     "leads": {
+        "organization_id": "ALTER TABLE leads ADD COLUMN organization_id INTEGER",
+        "owner_user_id": "ALTER TABLE leads ADD COLUMN owner_user_id INTEGER",
         "score": "ALTER TABLE leads ADD COLUMN score FLOAT DEFAULT 0",
         "predicted_revenue": "ALTER TABLE leads ADD COLUMN predicted_revenue FLOAT DEFAULT 0",
         "follow_up_date": "ALTER TABLE leads ADD COLUMN follow_up_date VARCHAR",
         "health_score": "ALTER TABLE leads ADD COLUMN health_score FLOAT DEFAULT 50",
         "health_status": "ALTER TABLE leads ADD COLUMN health_status VARCHAR DEFAULT 'Warm'",
+        "segment": "ALTER TABLE leads ADD COLUMN segment VARCHAR DEFAULT 'general'",
+        "tags": "ALTER TABLE leads ADD COLUMN tags JSON DEFAULT '[]'",
         "updated_at": "ALTER TABLE leads ADD COLUMN updated_at DATETIME",
         "last_activity_at": "ALTER TABLE leads ADD COLUMN last_activity_at DATETIME",
         "relationship_score": "ALTER TABLE leads ADD COLUMN relationship_score INTEGER DEFAULT 50",

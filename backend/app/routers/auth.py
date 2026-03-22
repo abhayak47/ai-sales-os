@@ -5,6 +5,7 @@ from datetime import timedelta
 from app.database import get_db
 from app.schemas.user import UserCreate, UserResponse, Token
 from app.services.auth import (
+    build_user_payload,
     create_user,
     get_user_by_email,
     authenticate_user,
@@ -27,7 +28,7 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
             detail="Email already registered"
         )
     new_user = create_user(db, user)
-    return new_user
+    return build_user_payload(db, new_user)
 
 # ── Login ────────────────────────────────────────────
 @router.post("/login", response_model=Token)
@@ -54,7 +55,7 @@ def get_me(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token"
         )
-    return user
+    return build_user_payload(db, user)
 
 # Complete onboarding
 @router.post("/complete-onboarding")

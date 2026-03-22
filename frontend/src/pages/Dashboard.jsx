@@ -18,6 +18,7 @@ const WORKSPACE_MODES = {
     description: "See pipeline health, risk, and the revenue levers that matter most right now.",
     sections: {
       stats: true,
+      workspacePulse: true,
       savedViews: true,
       priorityPlays: true,
       todayFocus: true,
@@ -26,7 +27,7 @@ const WORKSPACE_MODES = {
       pipelineOverview: true,
       utilities: true,
     },
-    order: ["stats", "savedViews", "priorityPlays", "todayFocus", "riskRadar", "pipelineOverview", "utilities"],
+    order: ["stats", "workspacePulse", "savedViews", "priorityPlays", "todayFocus", "riskRadar", "pipelineOverview", "utilities"],
     heroPrimary: "/leads?view=decision_this_week",
     heroPrimaryLabel: "Open decision this week",
     heroSecondary: "/pipeline",
@@ -38,6 +39,7 @@ const WORKSPACE_MODES = {
     description: "Strip away the noise and surface only what helps you move deals forward today.",
     sections: {
       stats: true,
+      workspacePulse: true,
       savedViews: true,
       priorityPlays: true,
       todayFocus: true,
@@ -46,7 +48,7 @@ const WORKSPACE_MODES = {
       pipelineOverview: false,
       utilities: true,
     },
-    order: ["stats", "priorityPlays", "todayFocus", "executionQueue", "savedViews", "riskRadar", "utilities"],
+    order: ["stats", "workspacePulse", "priorityPlays", "todayFocus", "executionQueue", "savedViews", "riskRadar", "utilities"],
     heroPrimary: "/leads?view=hot_deals",
     heroPrimaryLabel: "Open hot deals",
     heroSecondary: "/followup",
@@ -58,6 +60,7 @@ const WORKSPACE_MODES = {
     description: "Run expansions and customer growth from a clearer post-sale operating view.",
     sections: {
       stats: true,
+      workspacePulse: true,
       savedViews: true,
       priorityPlays: false,
       todayFocus: true,
@@ -66,7 +69,7 @@ const WORKSPACE_MODES = {
       pipelineOverview: true,
       utilities: true,
     },
-    order: ["stats", "savedViews", "todayFocus", "executionQueue", "pipelineOverview", "utilities"],
+    order: ["stats", "workspacePulse", "savedViews", "todayFocus", "executionQueue", "pipelineOverview", "utilities"],
     heroPrimary: "/leads?status=Converted",
     heroPrimaryLabel: "Open won accounts",
     heroSecondary: "/coach",
@@ -225,6 +228,34 @@ export default function Dashboard() {
           </div>
         ),
       },
+      workspacePulse: {
+        span: "full",
+        node: (
+          <div className="grid grid-cols-1 xl:grid-cols-[1.3fr_1fr_1fr_1fr] gap-4">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+              <div className="text-xs uppercase tracking-[0.2em] text-white/35 mb-2">Workspace Pulse</div>
+              <div className="text-xl font-semibold">{stats?.workspace?.name || "Personal workspace"}</div>
+              <div className="text-sm text-white/45 mt-2">
+                {stats?.workspace?.scope === "workspace" ? "Shared workspace scope" : "Personal workspace scope"} · {stats?.workspace?.role || "owner"}
+              </div>
+              <div className="text-xs text-white/30 mt-3">
+                {stats?.workspace?.slug ? `/${stats.workspace.slug}` : stats?.user?.email}
+              </div>
+            </div>
+            {[
+              ["Segments live", stats?.workspace?.segments_live || 0, "market slices active"],
+              ["Tagged leads", stats?.workspace?.tagged_leads || 0, "pipeline records enriched"],
+              ["Open pipeline", stats?.workspace?.open_pipeline || 0, "deals still in motion"],
+            ].map(([label, value, sub]) => (
+              <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                <div className="text-xs text-white/35 mb-2">{label}</div>
+                <div className="text-3xl font-bold">{value}</div>
+                <div className="text-xs text-white/35 mt-2">{sub}</div>
+              </div>
+            ))}
+          </div>
+        ),
+      },
       savedViews: {
         span: "full",
         node: <SavedViewsPanel />,
@@ -375,6 +406,17 @@ export default function Dashboard() {
               <div className="text-xs uppercase tracking-[0.2em] text-white/35 mb-3">{themeConfig.eyebrow}</div>
               <h1 className="text-3xl md:text-4xl font-bold mb-3">{greeting}, {userName}</h1>
               <p className="text-white/50 text-sm max-w-3xl leading-6">{themeConfig.description}</p>
+              <div className="flex flex-wrap gap-2 mt-4">
+                <span className="px-3 py-1.5 rounded-full border border-cyan-500/20 bg-cyan-500/10 text-cyan-200 text-xs">
+                  {stats?.workspace?.name || "Personal workspace"}
+                </span>
+                <span className="px-3 py-1.5 rounded-full border border-white/10 bg-white/[0.04] text-white/60 text-xs">
+                  Role: {stats?.workspace?.role || "owner"}
+                </span>
+                <span className="px-3 py-1.5 rounded-full border border-white/10 bg-white/[0.04] text-white/60 text-xs">
+                  {stats?.workspace?.segments_live || 0} segments active
+                </span>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-full xl:min-w-[430px] xl:max-w-[460px]">

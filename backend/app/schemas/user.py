@@ -13,8 +13,13 @@ class UserLogin(BaseModel):
 
 class UserResponse(BaseModel):
     id: int
+    organization_id: Optional[int] = None
+    organization_name: Optional[str] = None
+    organization_slug: Optional[str] = None
     full_name: str
     email: str
+    role: str = "owner"
+    job_title: Optional[str] = None
     plan: str
     ai_credits: int
     subscription_status: Optional[str] = "inactive"

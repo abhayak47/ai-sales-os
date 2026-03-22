@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.activity import Activity
 from app.models.lead import Lead
-from app.services.auth import get_current_user
+from app.services.auth import build_user_payload, get_current_user
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
@@ -21,6 +21,16 @@ def _days_since(reference_date) -> int:
     if hasattr(reference_date, "replace"):
         reference_date = reference_date.replace(tzinfo=None)
     return max((datetime.now() - reference_date).days, 0)
+
+
+def _workspace_leads_query(user, db: Session):
+    if getattr(user, "organization_id", None):
+        return db.query(Lead).filter(Lead.organization_id == user.organization_id)
+    return db.query(Lead).filter(Lead.user_id == user.id)
+
+
+def _workspace_lead(user, db: Session, lead_id: int):
+    return _workspace_leads_query(user, db).filter(Lead.id == lead_id).first()
 
 
 def _build_outreach_draft(lead: Lead, last_activity, action_type: str) -> str:
@@ -157,7 +167,7 @@ def get_stats(
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    leads = db.query(Lead).filter(Lead.user_id == user.id).all()
+    leads = _workspace_leads_query(user, db).all()
     total_leads = len(leads)
     converted = len([l for l in leads if l.status == "Converted"])
     contacted = len([l for l in leads if l.status == "Contacted"])
@@ -165,15 +175,21 @@ def get_stats(
     lost = len([l for l in leads if l.status == "Lost"])
     new_leads = len([l for l in leads if l.status == "New"])
     conversion_rate = round((converted / total_leads * 100), 1) if total_leads > 0 else 0
+    segments_live = len({(lead.segment or "general") for lead in leads})
+    tagged_leads = len([lead for lead in leads if lead.tags])
+    open_pipeline = len([lead for lead in leads if lead.status not in ["Converted", "Lost"]])
+    user_payload = build_user_payload(db, user)
 
     return {
-        "user": {
-            "id": user.id,
-            "full_name": user.full_name,
-            "email": user.email,
-            "plan": user.plan,
-            "ai_credits": user.ai_credits,
-            "is_onboarded": user.is_onboarded,
+        "user": user_payload,
+        "workspace": {
+            "name": user_payload.get("organization_name") or "Personal workspace",
+            "slug": user_payload.get("organization_slug"),
+            "role": user_payload.get("role") or "owner",
+            "segments_live": segments_live,
+            "tagged_leads": tagged_leads,
+            "open_pipeline": open_pipeline,
+            "scope": "workspace" if user_payload.get("organization_id") else "personal",
         },
         "leads": {
             "total": total_leads,
@@ -196,7 +212,7 @@ def get_today_focus(
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    leads = db.query(Lead).filter(Lead.user_id == user.id).all()
+    leads = _workspace_leads_query(user, db).all()
     actions = []
 
     hot_leads = [l for l in leads if l.status == "Interested"]
@@ -279,10 +295,7 @@ def get_smart_followup(
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    lead = db.query(Lead).filter(
-        Lead.id == lead_id,
-        Lead.user_id == user.id
-    ).first()
+    lead = _workspace_lead(user, db, lead_id)
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
 
@@ -369,7 +382,7 @@ def get_command_center(
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    leads = db.query(Lead).filter(Lead.user_id == user.id).all()
+    leads = _workspace_leads_query(user, db).all()
     plays = []
     for lead in leads:
         activities = db.query(Activity).filter(
@@ -402,10 +415,7 @@ def get_deal_command(
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    lead = db.query(Lead).filter(
-        Lead.id == lead_id,
-        Lead.user_id == user.id
-    ).first()
+    lead = _workspace_lead(user, db, lead_id)
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
 
@@ -438,8 +448,7 @@ def get_deal_risks(
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    leads = db.query(Lead).filter(
-        Lead.user_id == user.id,
+    leads = _workspace_leads_query(user, db).filter(
         Lead.status.notin_(["Converted", "Lost"])
     ).all()
 

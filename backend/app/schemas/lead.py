@@ -8,6 +8,8 @@ class LeadCreate(BaseModel):
     phone: Optional[str] = None
     company: Optional[str] = None
     status: Optional[str] = "New"
+    segment: Optional[str] = "general"
+    tags: Optional[List[str]] = None
     notes: Optional[str] = None
 
 class LeadUpdate(BaseModel):
@@ -16,16 +18,22 @@ class LeadUpdate(BaseModel):
     phone: Optional[str] = None
     company: Optional[str] = None
     status: Optional[str] = None
+    segment: Optional[str] = None
+    tags: Optional[List[str]] = None
     notes: Optional[str] = None
 
 class LeadResponse(BaseModel):
     id: int
     user_id: int
+    organization_id: Optional[int] = None
+    owner_user_id: Optional[int] = None
     name: str
     email: Optional[str] = None
     phone: Optional[str] = None
     company: Optional[str] = None
     status: str
+    segment: Optional[str] = "general"
+    tags: Optional[List[str]] = None
     notes: Optional[str] = None
     score: Optional[float] = 0.0
     predicted_revenue: Optional[float] = 0.0
@@ -58,6 +66,8 @@ class LeadListMeta(BaseModel):
     total_pages: int
     search: Optional[str] = None
     status: Optional[str] = None
+    segment: Optional[str] = None
+    tag: Optional[str] = None
     view: Optional[str] = None
     sort_by: str
     sort_dir: str

@@ -4,8 +4,10 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import API from "../api/axios";
 import SavedViewsPanel from "../components/SavedViewsPanel";
 import Sidebar from "../components/Sidebar";
+import { useAuth } from "../context/AuthContext";
 
 const STATUS_OPTIONS = ["All", "New", "Contacted", "Interested", "Converted", "Lost"];
+const SEGMENT_OPTIONS = ["All", "general", "inbound", "outbound", "partner", "expansion"];
 
 const SORT_OPTIONS = [
   { value: "updated_at:desc", label: "Recently updated" },
@@ -29,11 +31,14 @@ const EMPTY_FORM = {
   phone: "",
   company: "",
   status: "New",
+  segment: "general",
+  tagsText: "",
   notes: "",
 };
 
 export default function Leads() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [leads, setLeads] = useState([]);
   const [summary, setSummary] = useState(null);
@@ -45,6 +50,8 @@ export default function Leads() {
   const [query, setQuery] = useState({
     search: "",
     status: "All",
+    segment: "All",
+    tag: "",
     view: "",
     sort: "updated_at:desc",
     page: 1,
@@ -53,14 +60,18 @@ export default function Leads() {
 
   useEffect(() => {
     fetchLeads();
-  }, [query.page, query.pageSize, query.status, query.sort, query.view]);
+  }, [query.page, query.pageSize, query.status, query.segment, query.tag, query.sort, query.view]);
 
   useEffect(() => {
     const view = searchParams.get("view") || "";
     const status = searchParams.get("status") || "All";
+    const segment = searchParams.get("segment") || "All";
+    const tag = searchParams.get("tag") || "";
     setQuery((current) => {
-      if (view === current.view && status === current.status) return current;
-      return { ...current, view, status, page: 1 };
+      if (view === current.view && status === current.status && segment === current.segment && tag === current.tag) {
+        return current;
+      }
+      return { ...current, view, status, segment, tag, page: 1 };
     });
   }, [searchParams]);
 
@@ -72,6 +83,8 @@ export default function Leads() {
         params: {
           search: searchOverride || undefined,
           status: query.status === "All" ? undefined : query.status,
+          segment: query.segment === "All" ? undefined : query.segment,
+          tag: query.tag || undefined,
           view: query.view || undefined,
           sort_by: sortBy,
           sort_dir: sortDir,
@@ -97,11 +110,21 @@ export default function Leads() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const payload = {
+      ...form,
+      segment: form.segment || "general",
+      tags: form.tagsText
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean),
+    };
+    delete payload.tagsText;
+
     try {
       if (editLead) {
-        await API.put(`/leads/${editLead.id}`, form);
+        await API.put(`/leads/${editLead.id}`, payload);
       } else {
-        await API.post("/leads/", form);
+        await API.post("/leads/", payload);
       }
       setForm(EMPTY_FORM);
       setShowForm(false);
@@ -121,6 +144,8 @@ export default function Leads() {
       phone: lead.phone || "",
       company: lead.company || "",
       status: lead.status,
+      segment: lead.segment || "general",
+      tagsText: (lead.tags || []).join(", "),
       notes: lead.notes || "",
     });
     setShowForm(true);
@@ -140,6 +165,8 @@ export default function Leads() {
   };
 
   const totalPages = meta?.total_pages || 1;
+  const visibleSegments = [...new Set(leads.map((lead) => lead.segment || "general"))];
+  const visibleTaggedLeads = leads.filter((lead) => (lead.tags || []).length > 0).length;
 
   return (
     <div className="min-h-screen bg-black text-white flex">
@@ -186,6 +213,28 @@ export default function Leads() {
           ))}
         </div>
 
+        <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr_0.8fr] gap-3 mb-6">
+          <div className="border border-white/10 rounded-2xl p-5 bg-white/[0.02]">
+            <div className="text-xs uppercase tracking-[0.2em] text-white/35 mb-2">Workspace Scope</div>
+            <div className="text-lg font-semibold">{user?.organization_name || "Personal workspace"}</div>
+            <div className="text-sm text-white/45 mt-2">
+              {user?.role || "owner"} role · leads created here are scoped to this workspace foundation.
+            </div>
+          </div>
+          <div className="border border-white/10 rounded-2xl p-5 bg-white/[0.02]">
+            <div className="text-xs text-white/35 mb-2">Visible segments</div>
+            <div className="text-3xl font-bold">{visibleSegments.length}</div>
+            <div className="text-xs text-white/35 mt-2">
+              {visibleSegments.slice(0, 3).join(", ") || "No segmented leads yet"}
+            </div>
+          </div>
+          <div className="border border-white/10 rounded-2xl p-5 bg-white/[0.02]">
+            <div className="text-xs text-white/35 mb-2">Tagged records</div>
+            <div className="text-3xl font-bold">{visibleTaggedLeads}</div>
+            <div className="text-xs text-white/35 mt-2">On this page of results</div>
+          </div>
+        </div>
+
         <div className="mb-6">
           <SavedViewsPanel compact />
         </div>
@@ -218,6 +267,30 @@ export default function Leads() {
                 </option>
               ))}
             </select>
+            <select
+              value={query.segment}
+              onChange={(e) =>
+                setQuery((current) => ({
+                  ...current,
+                  segment: e.target.value,
+                  page: 1,
+                  view: "",
+                }))
+              }
+              className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none"
+            >
+              {SEGMENT_OPTIONS.map((segment) => (
+                <option key={segment} value={segment} className="bg-black">
+                  {segment === "All" ? "All segments" : `${segment.charAt(0).toUpperCase()}${segment.slice(1)}`}
+                </option>
+              ))}
+            </select>
+            <input
+              value={query.tag}
+              onChange={(e) => setQuery((current) => ({ ...current, tag: e.target.value, page: 1, view: "" }))}
+              placeholder="Filter by tag"
+              className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/25 focus:outline-none"
+            />
             <select
               value={query.sort}
               onChange={(e) => setQuery((current) => ({ ...current, sort: e.target.value, page: 1 }))}
@@ -293,6 +366,22 @@ export default function Leads() {
                 </select>
               </div>
               <div>
+                <label className="text-sm text-white/60 mb-1 block">Segment</label>
+                <select
+                  name="segment"
+                  value={form.segment}
+                  onChange={(e) => setForm((current) => ({ ...current, segment: e.target.value }))}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none"
+                >
+                  {SEGMENT_OPTIONS.filter((item) => item !== "All").map((segment) => (
+                    <option key={segment} value={segment} className="bg-black">
+                      {segment.charAt(0).toUpperCase()}
+                      {segment.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
                 <label className="text-sm text-white/60 mb-1 block">Notes</label>
                 <input
                   type="text"
@@ -300,6 +389,17 @@ export default function Leads() {
                   value={form.notes}
                   onChange={(e) => setForm((current) => ({ ...current, notes: e.target.value }))}
                   placeholder="Any notes..."
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="text-sm text-white/60 mb-1 block">Tags</label>
+                <input
+                  type="text"
+                  name="tagsText"
+                  value={form.tagsText}
+                  onChange={(e) => setForm((current) => ({ ...current, tagsText: e.target.value }))}
+                  placeholder="enterprise, q2, india-market"
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none"
                 />
               </div>
@@ -351,6 +451,24 @@ export default function Leads() {
                   <div>
                     <div className="font-medium">{lead.name}</div>
                     <div className="text-sm text-white/40 mt-1 line-clamp-2">{lead.notes || "No notes yet"}</div>
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      <span className="text-[11px] uppercase tracking-[0.18em] px-2.5 py-1 rounded-full border border-cyan-500/20 bg-cyan-500/10 text-cyan-200/90">
+                        {lead.segment || "general"}
+                      </span>
+                      {(lead.tags || []).slice(0, 3).map((tag) => (
+                        <span
+                          key={`${lead.id}-${tag}`}
+                          className="text-[11px] px-2.5 py-1 rounded-full border border-white/10 bg-white/[0.04] text-white/55"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                      {(lead.tags || []).length > 3 && (
+                        <span className="text-[11px] px-2.5 py-1 rounded-full border border-white/10 bg-white/[0.04] text-white/45">
+                          +{lead.tags.length - 3}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="text-sm text-white/60 space-y-1">
                     <div>{lead.company || "No company"}</div>
