@@ -217,10 +217,15 @@ export default function Contacts() {
             </div>
           ))}
           {contacts.length === 0 && (
-          <div className={`p-12 text-center rounded-xl border ${isEnterprise ? "border-slate-200 bg-white text-slate-500" : "premium-card text-white/40"}`}>
-            No contacts yet.
-          </div>
-        )}
+            <div
+              className={`p-12 text-center rounded-xl border ${
+                isEnterprise ? "border-slate-200 bg-white text-slate-500" : "premium-card text-white/40"
+              }`}
+            >
+              No contacts yet.
+            </div>
+          )}
+        </div>
         </div>
       </div>
     </div>
