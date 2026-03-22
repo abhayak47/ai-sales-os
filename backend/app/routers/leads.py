@@ -10,6 +10,8 @@ from app.models.activity import Activity
 from app.models.lead import Lead
 from app.schemas.lead import LeadCreate, LeadListResponse, LeadResponse, LeadUpdate, SavedViewsResponse
 from app.services.auth import get_current_user
+from app.services.automation import create_stage_automation_tasks
+from app.services.workspace import can_edit_lead, require_role, workspace_query
 
 router = APIRouter(prefix="/leads", tags=["Leads"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
@@ -27,9 +29,7 @@ def _normalize_tags(tags: list[str] | None):
 
 
 def _base_query(user, db: Session):
-    if getattr(user, "organization_id", None):
-        return db.query(Lead).filter(Lead.organization_id == user.organization_id)
-    return db.query(Lead).filter(Lead.user_id == user.id)
+    return workspace_query(db, Lead, user)
 
 
 def _apply_filters(query, search: str | None, status: str | None, segment: str | None, tag: str | None):
@@ -227,11 +227,14 @@ def create_lead(
     payload = lead.dict()
     payload["segment"] = payload.get("segment") or "general"
     payload["tags"] = _normalize_tags(payload.get("tags"))
+    requested_owner_id = payload.pop("owner_user_id", None)
+    if requested_owner_id and requested_owner_id != user.id:
+        require_role(user, "manager")
     new_lead = Lead(
         **payload,
         user_id=user.id,
         organization_id=getattr(user, "organization_id", None),
-        owner_user_id=user.id,
+        owner_user_id=requested_owner_id or user.id,
     )
     db.add(new_lead)
     db.commit()
@@ -250,13 +253,22 @@ def update_lead(
     lead = _base_query(user, db).filter(Lead.id == lead_id).first()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
+    if not can_edit_lead(user, lead):
+        raise HTTPException(status_code=403, detail="Not allowed to edit this lead")
+
     updates = lead_data.dict(exclude_unset=True)
     if "tags" in updates:
         updates["tags"] = _normalize_tags(updates.get("tags"))
     if "segment" in updates and not updates.get("segment"):
         updates["segment"] = "general"
+    if "owner_user_id" in updates and updates.get("owner_user_id") and updates["owner_user_id"] != lead.owner_user_id:
+        require_role(user, "manager")
+
+    previous_status = lead.status
     for key, value in updates.items():
         setattr(lead, key, value)
+    if "status" in updates and updates["status"] != previous_status:
+        create_stage_automation_tasks(db, lead, user.id)
     db.commit()
     db.refresh(lead)
     return lead
@@ -272,6 +284,7 @@ def delete_lead(
     lead = _base_query(user, db).filter(Lead.id == lead_id).first()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
+    require_role(user, "manager")
     db.delete(lead)
     db.commit()
     return {"message": "Lead deleted"}

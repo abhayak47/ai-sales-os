@@ -4,14 +4,33 @@ from typing import Optional
 from pydantic import BaseModel
 
 
+class TaskCreate(BaseModel):
+    lead_id: int
+    title: str
+    description: Optional[str] = None
+    priority: str = "medium"
+    kind: str = "task"
+    channel: Optional[str] = None
+    subject: Optional[str] = None
+    content: Optional[str] = None
+    due_at: Optional[datetime] = None
+    sequence_step: Optional[int] = None
+    assignee_user_id: Optional[int] = None
+
+
 class TaskUpdate(BaseModel):
-    status: str
+    status: Optional[str] = None
+    priority: Optional[str] = None
+    due_at: Optional[datetime] = None
+    assignee_user_id: Optional[int] = None
 
 
 class TaskResponse(BaseModel):
     id: int
     user_id: int
+    organization_id: Optional[int] = None
     lead_id: int
+    assignee_user_id: Optional[int] = None
     kind: str
     title: str
     description: Optional[str] = None

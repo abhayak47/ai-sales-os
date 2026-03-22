@@ -21,6 +21,7 @@ from app.services.lead_memory import (
     infer_memory_points,
     serialize_artifact,
 )
+from app.services.workspace import workspace_get, workspace_query
 
 router = APIRouter(prefix="/memory", tags=["Memory"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
@@ -33,8 +34,8 @@ def _get_user(token: str, db: Session):
     return user
 
 
-def _get_lead(lead_id: int, user_id: int, db: Session):
-    lead = db.query(Lead).filter(Lead.id == lead_id, Lead.user_id == user_id).first()
+def _get_lead(lead_id: int, user, db: Session):
+    lead = workspace_get(db, Lead, user, lead_id)
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
     return lead
@@ -47,11 +48,11 @@ def get_lead_memory(
     db: Session = Depends(get_db),
 ):
     user = _get_user(token, db)
-    lead = _get_lead(lead_id, user.id, db)
+    lead = _get_lead(lead_id, user, db)
 
     activities = (
-        db.query(Activity)
-        .filter(Activity.lead_id == lead_id, Activity.user_id == user.id)
+        workspace_query(db, Activity, user)
+        .filter(Activity.lead_id == lead_id)
         .order_by(Activity.created_at.desc())
         .limit(8)
         .all()
@@ -77,7 +78,7 @@ def get_lead_artifacts(
     db: Session = Depends(get_db),
 ):
     user = _get_user(token, db)
-    _get_lead(lead_id, user.id, db)
+    _get_lead(lead_id, user, db)
 
     types = [item.strip() for item in artifact_type.split(",")] if artifact_type else None
     artifacts = get_recent_artifacts(db, user_id=user.id, lead_id=lead_id, limit=min(limit, 50), artifact_types=types)
@@ -91,7 +92,7 @@ def create_memory_pin(
     db: Session = Depends(get_db),
 ):
     user = _get_user(token, db)
-    _get_lead(payload.lead_id, user.id, db)
+    _get_lead(payload.lead_id, user, db)
     memory_pin = LeadMemoryPin(
         user_id=user.id,
         lead_id=payload.lead_id,

@@ -7,7 +7,9 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.activity import Activity
 from app.models.lead import Lead
+from app.models.task import Task
 from app.services.auth import build_user_payload, get_current_user
+from app.services.workspace import workspace_query
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
@@ -24,9 +26,7 @@ def _days_since(reference_date) -> int:
 
 
 def _workspace_leads_query(user, db: Session):
-    if getattr(user, "organization_id", None):
-        return db.query(Lead).filter(Lead.organization_id == user.organization_id)
-    return db.query(Lead).filter(Lead.user_id == user.id)
+    return workspace_query(db, Lead, user)
 
 
 def _workspace_lead(user, db: Session, lead_id: int):
@@ -497,3 +497,55 @@ def get_deal_risks(
 
     risks.sort(key=lambda item: item["days_inactive"], reverse=True)
     return {"risks": risks, "total": len(risks)}
+
+
+@router.get("/reporting")
+def get_reporting(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(token, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    leads = _workspace_leads_query(user, db).all()
+    activities = workspace_query(db, Activity, user).all()
+    open_tasks = workspace_query(db, Task, user).filter(Task.status != "completed").all()
+
+    segment_breakdown = {}
+    status_breakdown = {}
+    for lead in leads:
+        segment = lead.segment or "general"
+        segment_breakdown[segment] = segment_breakdown.get(segment, 0) + 1
+        status_breakdown[lead.status] = status_breakdown.get(lead.status, 0) + 1
+
+    activity_breakdown = {}
+    for activity in activities:
+        activity_breakdown[activity.type] = activity_breakdown.get(activity.type, 0) + 1
+
+    reminder_load = [
+        {
+            "title": task.title,
+            "priority": task.priority,
+            "due_at": task.due_at.isoformat() if task.due_at else None,
+            "lead_id": task.lead_id,
+        }
+        for task in sorted(open_tasks, key=lambda item: (item.due_at or datetime.max, item.id))[:8]
+    ]
+
+    at_risk = len([lead for lead in leads if lead.status not in ["Converted", "Lost"] and (lead.health_score or 50) < 45])
+
+    return {
+        "headline": "Revenue reporting",
+        "summary": {
+            "total_leads": len(leads),
+            "open_pipeline": len([lead for lead in leads if lead.status not in ["Converted", "Lost"]]),
+            "converted": len([lead for lead in leads if lead.status == "Converted"]),
+            "at_risk": at_risk,
+            "open_tasks": len(open_tasks),
+        },
+        "segments": [{"label": key, "count": value} for key, value in sorted(segment_breakdown.items())],
+        "statuses": [{"label": key, "count": value} for key, value in status_breakdown.items()],
+        "activities": [{"label": key, "count": value} for key, value in activity_breakdown.items()],
+        "reminders": reminder_load,
+    }

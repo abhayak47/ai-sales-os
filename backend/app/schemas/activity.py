@@ -11,6 +11,7 @@ class ActivityCreate(BaseModel):
 class ActivityResponse(BaseModel):
     id: int
     user_id: int
+    organization_id: Optional[int] = None
     lead_id: int
     type: str
     title: str

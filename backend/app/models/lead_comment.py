@@ -1,15 +1,16 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.sql import func
+
 from app.database import Base
 
-class Activity(Base):
-    __tablename__ = "activities"
+
+class LeadComment(Base):
+    __tablename__ = "lead_comments"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True, index=True)
     lead_id = Column(Integer, ForeignKey("leads.id"), nullable=False)
-    type = Column(String, nullable=False)  # call, email, whatsapp, note, meeting, stage_change
-    title = Column(String, nullable=False)
-    description = Column(Text, nullable=True)
+    author_name = Column(String, nullable=False)
+    body = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

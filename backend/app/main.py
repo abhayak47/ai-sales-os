@@ -4,8 +4,8 @@ from sqlalchemy import inspect, text
 
 from app.config import settings
 from app.database import Base, engine
-from app.routers import auth, ai, leads, payments, dashboard, capture, activities, tasks, memory
-from app.models import activity, billing, credits, lead, lead_memory, organization, task, user
+from app.routers import activities, ai, auth, capture, comments, contacts, dashboard, emails, leads, memory, payments, tasks, team
+from app.models import activity, billing, contact, credits, email, lead, lead_comment, lead_memory, organization, task, user
 
 
 SQLITE_COMPAT_COLUMNS = {
@@ -39,6 +39,8 @@ SQLITE_COMPAT_COLUMNS = {
         "relationship_score": "ALTER TABLE leads ADD COLUMN relationship_score INTEGER DEFAULT 50",
     },
     "tasks": {
+        "organization_id": "ALTER TABLE tasks ADD COLUMN organization_id INTEGER",
+        "assignee_user_id": "ALTER TABLE tasks ADD COLUMN assignee_user_id INTEGER",
         "kind": "ALTER TABLE tasks ADD COLUMN kind VARCHAR DEFAULT 'task'",
         "priority": "ALTER TABLE tasks ADD COLUMN priority VARCHAR DEFAULT 'medium'",
         "status": "ALTER TABLE tasks ADD COLUMN status VARCHAR DEFAULT 'open'",
@@ -48,6 +50,9 @@ SQLITE_COMPAT_COLUMNS = {
         "due_at": "ALTER TABLE tasks ADD COLUMN due_at DATETIME",
         "sequence_step": "ALTER TABLE tasks ADD COLUMN sequence_step INTEGER",
         "completed_at": "ALTER TABLE tasks ADD COLUMN completed_at DATETIME",
+    },
+    "activities": {
+        "organization_id": "ALTER TABLE activities ADD COLUMN organization_id INTEGER",
     },
 }
 
@@ -98,6 +103,10 @@ app.include_router(capture.router)
 app.include_router(activities.router)
 app.include_router(tasks.router)
 app.include_router(memory.router)
+app.include_router(contacts.router)
+app.include_router(emails.router)
+app.include_router(team.router)
+app.include_router(comments.router)
 
 @app.get("/")
 def root():

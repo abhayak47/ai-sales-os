@@ -8,6 +8,7 @@ class LeadCreate(BaseModel):
     phone: Optional[str] = None
     company: Optional[str] = None
     status: Optional[str] = "New"
+    owner_user_id: Optional[int] = None
     segment: Optional[str] = "general"
     tags: Optional[List[str]] = None
     notes: Optional[str] = None
@@ -18,6 +19,7 @@ class LeadUpdate(BaseModel):
     phone: Optional[str] = None
     company: Optional[str] = None
     status: Optional[str] = None
+    owner_user_id: Optional[int] = None
     segment: Optional[str] = None
     tags: Optional[List[str]] = None
     notes: Optional[str] = None

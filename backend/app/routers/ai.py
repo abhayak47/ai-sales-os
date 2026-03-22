@@ -43,6 +43,7 @@ from app.services.auth import deduct_credits, get_current_user
 from app.services.documents import extract_text_from_upload
 from app.services.lead_memory import get_pinned_facts, get_recent_artifacts, save_ai_artifact, build_memory_context
 from app.services.research import search_web_briefs
+from app.services.workspace import workspace_get, workspace_query
 
 router = APIRouter(prefix="/ai", tags=["AI"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
@@ -67,8 +68,8 @@ def _refund_credits(db: Session, user, amount: int) -> None:
     db.commit()
 
 
-def _get_owned_lead(lead_id: int, user_id: int, db: Session) -> Lead:
-    lead = db.query(Lead).filter(Lead.id == lead_id, Lead.user_id == user_id).first()
+def _get_owned_lead(lead_id: int, user, db: Session) -> Lead:
+    lead = workspace_get(db, Lead, user, lead_id)
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
     return lead
@@ -187,7 +188,7 @@ def analyze_lead_endpoint(
     user = get_current_user(token, db)
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    lead = _get_owned_lead(request.lead_id, user.id, db)
+    lead = _get_owned_lead(request.lead_id, user, db)
     if not deduct_credits(db, user, "analyze_lead", CREDIT_COSTS["analyze_lead"]):
         raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['analyze_lead']} credits. Please upgrade.")
     context_snapshot = _build_lead_context(lead, db)
@@ -223,7 +224,7 @@ def score_lead_endpoint(
     user = get_current_user(token, db)
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    lead = _get_owned_lead(lead_id, user.id, db)
+    lead = _get_owned_lead(lead_id, user, db)
     if not deduct_credits(db, user, "score_lead", CREDIT_COSTS["score_lead"]):
         raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['score_lead']} credits. Please upgrade.")
     context_snapshot = _build_lead_context(lead, db)
@@ -266,7 +267,7 @@ def sales_coach(
     if not deduct_credits(db, user, "coach", CREDIT_COSTS["coach"]):
         raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['coach']} credits. Please upgrade.")
 
-    leads = db.query(Lead).filter(Lead.user_id == user.id).all()
+    leads = workspace_query(db, Lead, user).all()
     if leads:
         lines = ["Current pipeline with real context:"]
         for lead in leads:
@@ -298,7 +299,7 @@ def meeting_analysis_endpoint(
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    lead = _get_owned_lead(request.lead_id, user.id, db)
+    lead = _get_owned_lead(request.lead_id, user, db)
     if not deduct_credits(db, user, "meeting_analysis", CREDIT_COSTS["meeting_analysis"]):
         raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['meeting_analysis']} credits. Please upgrade.")
     context_snapshot = _build_lead_context(lead, db)
@@ -342,7 +343,7 @@ async def meeting_analysis_upload_endpoint(
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    lead = _get_owned_lead(lead_id, user.id, db)
+    lead = _get_owned_lead(lead_id, user, db)
     if not deduct_credits(db, user, "meeting_analysis", CREDIT_COSTS["meeting_analysis"]):
         raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['meeting_analysis']} credits. Please upgrade.")
     context_snapshot = _build_lead_context(lead, db)
@@ -385,7 +386,7 @@ def deal_strategy_endpoint(
     user = get_current_user(token, db)
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    lead = _get_owned_lead(request.lead_id, user.id, db)
+    lead = _get_owned_lead(request.lead_id, user, db)
     if not deduct_credits(db, user, "deal_strategy", CREDIT_COSTS["deal_strategy"]):
         raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['deal_strategy']} credits. Please upgrade.")
     context_snapshot = _build_lead_context(lead, db)
@@ -420,7 +421,7 @@ def objection_playbook_endpoint(
     user = get_current_user(token, db)
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    lead = _get_owned_lead(request.lead_id, user.id, db)
+    lead = _get_owned_lead(request.lead_id, user, db)
     if not deduct_credits(db, user, "objection_playbook", CREDIT_COSTS["objection_playbook"]):
         raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['objection_playbook']} credits. Please upgrade.")
     context_snapshot = _build_lead_context(lead, db)
@@ -455,7 +456,7 @@ def revival_campaign_endpoint(
     user = get_current_user(token, db)
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    lead = _get_owned_lead(request.lead_id, user.id, db)
+    lead = _get_owned_lead(request.lead_id, user, db)
     if not deduct_credits(db, user, "revival_campaign", CREDIT_COSTS["revival_campaign"]):
         raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['revival_campaign']} credits. Please upgrade.")
     context_snapshot = _build_lead_context(lead, db)
@@ -490,7 +491,7 @@ def stakeholder_map_endpoint(
     user = get_current_user(token, db)
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    lead = _get_owned_lead(request.lead_id, user.id, db)
+    lead = _get_owned_lead(request.lead_id, user, db)
     if not deduct_credits(db, user, "stakeholder_map", CREDIT_COSTS["stakeholder_map"]):
         raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['stakeholder_map']} credits. Please upgrade.")
     context_snapshot = _build_lead_context(lead, db)
@@ -524,7 +525,7 @@ def meeting_prep_endpoint(
     user = get_current_user(token, db)
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    lead = _get_owned_lead(request.lead_id, user.id, db)
+    lead = _get_owned_lead(request.lead_id, user, db)
     if not deduct_credits(db, user, "meeting_prep", CREDIT_COSTS["meeting_prep"]):
         raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['meeting_prep']} credits. Please upgrade.")
     context_snapshot = _build_lead_context(lead, db)
@@ -561,7 +562,7 @@ def activate_execution_endpoint(
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    lead = _get_owned_lead(request.lead_id, user.id, db)
+    lead = _get_owned_lead(request.lead_id, user, db)
     if not deduct_credits(db, user, "execution_plan", CREDIT_COSTS["execution_plan"]):
         raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['execution_plan']} credits. Please upgrade.")
     context_snapshot = _build_lead_context(lead, db)
@@ -575,7 +576,7 @@ def activate_execution_endpoint(
         )
 
         db.query(Task).filter(
-            Task.user_id == user.id,
+            Task.organization_id == getattr(user, "organization_id", None) if getattr(user, "organization_id", None) else Task.user_id == user.id,
             Task.lead_id == lead.id,
             Task.status != "completed",
             Task.kind.in_(["task", "follow_up", "sequence_step"]),
@@ -584,7 +585,9 @@ def activate_execution_endpoint(
         for item in result["tasks"]:
             db.add(Task(
                 user_id=user.id,
+                organization_id=getattr(user, "organization_id", None),
                 lead_id=lead.id,
+                assignee_user_id=lead.owner_user_id or user.id,
                 kind="task",
                 title=item["title"],
                 description=item["description"],
@@ -595,7 +598,9 @@ def activate_execution_endpoint(
         follow_up = result["follow_up"]
         db.add(Task(
             user_id=user.id,
+            organization_id=getattr(user, "organization_id", None),
             lead_id=lead.id,
+            assignee_user_id=lead.owner_user_id or user.id,
             kind="follow_up",
             title=f"Send {follow_up['channel']} follow-up",
             description=f"Scheduled {follow_up['timing']}",
@@ -609,7 +614,9 @@ def activate_execution_endpoint(
         for step in result["sequence"]:
             db.add(Task(
                 user_id=user.id,
+                organization_id=getattr(user, "organization_id", None),
                 lead_id=lead.id,
+                assignee_user_id=lead.owner_user_id or user.id,
                 kind="sequence_step",
                 title=f"Sequence step {step['step']}: {step['channel']}",
                 description=step["objective"],

@@ -17,8 +17,13 @@ class Settings(BaseSettings):
     RAZORPAY_KEY_ID: str = ""
     RAZORPAY_KEY_SECRET: str = ""
     RAZORPAY_WEBHOOK_SECRET: str = ""
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
     SMTP_EMAIL: str = ""
     SMTP_PASSWORD: str = ""
+    SMTP_FROM_NAME: str = "AI Sales OS"
+    SMTP_USE_TLS: bool = True
+    BACKEND_PUBLIC_URL: str = "http://127.0.0.1:8000"
     FRONTEND_URL: str = "http://localhost:5173"
     CORS_ORIGINS: str = "http://localhost:5173,https://ai-sales-os-plum.vercel.app"
 
