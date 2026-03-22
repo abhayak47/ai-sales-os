@@ -32,7 +32,7 @@ export default function ActionQueue({ limit = 4, compact = false }) {
   if (loading) {
     return (
       <div className="border border-white/10 rounded-xl p-5">
-        <div className="text-white/40">Loading command center...</div>
+        <div className="text-white/40 text-sm">Loading…</div>
       </div>
     );
   }
@@ -45,20 +45,18 @@ export default function ActionQueue({ limit = 4, compact = false }) {
     <div className="border border-white/10 rounded-2xl p-5 bg-white/[0.02]">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
         <div>
-          <h2 className="text-lg font-semibold">Priority Plays</h2>
-          <p className="text-white/40 text-sm mt-1">
-            The most important moves from your command center, ranked by urgency and momentum.
-          </p>
+          <h2 className="text-base font-semibold">Priority actions</h2>
+          <p className="text-white/40 text-sm mt-1">Ranked by urgency and fit for your pipeline.</p>
         </div>
-        <div className="flex gap-3 text-xs">
-          <div className="border border-white/10 rounded-lg px-3 py-2 text-white/60">
-            Open leads: <span className="text-white">{data.summary.total_open_leads}</span>
+        <div className="flex flex-wrap gap-2 text-[11px]">
+          <div className="border border-white/10 rounded-lg px-2.5 py-1.5 text-white/55">
+            Open <span className="text-white font-medium">{data.summary.total_open_leads}</span>
           </div>
-          <div className="border border-red-500/20 rounded-lg px-3 py-2 text-red-300">
-            Critical: {data.summary.critical_plays}
+          <div className="border border-white/10 rounded-lg px-2.5 py-1.5 text-white/55">
+            Urgent <span className="text-red-300/90 font-medium">{data.summary.critical_plays}</span>
           </div>
-          <div className="border border-orange-500/20 rounded-lg px-3 py-2 text-orange-300">
-            High: {data.summary.high_priority_plays}
+          <div className="border border-white/10 rounded-lg px-2.5 py-1.5 text-white/55">
+            High <span className="text-amber-200/80 font-medium">{data.summary.high_priority_plays}</span>
           </div>
         </div>
       </div>
@@ -103,9 +101,9 @@ export default function ActionQueue({ limit = 4, compact = false }) {
                 </div>
                 <button
                   onClick={() => navigate(`/leads/${play.lead_id}`)}
-                  className="px-4 py-2 bg-white text-black text-sm font-semibold rounded-lg hover:bg-white/90 transition"
+                  className="px-4 py-2 bg-white text-black text-sm font-medium rounded-lg hover:bg-white/90 transition"
                 >
-                  Open Deal
+                  Open lead
                 </button>
               </div>
             </div>

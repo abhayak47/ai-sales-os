@@ -32,10 +32,8 @@ export default function SavedViewsPanel({ compact = false }) {
     <div className="border border-white/10 rounded-2xl p-5 bg-white/[0.02]">
       <div className="flex items-center justify-between gap-3 mb-4">
         <div>
-          <h3 className="text-base font-semibold">Saved Views</h3>
-          <p className="text-white/40 text-sm">
-            Team-style shortcuts for the lead sets professionals revisit every day.
-          </p>
+          <h3 className="text-base font-semibold">Saved views</h3>
+          <p className="text-white/40 text-sm">One-click access to your filtered lead lists.</p>
         </div>
       </div>
 

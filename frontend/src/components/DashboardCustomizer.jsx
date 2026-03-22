@@ -1,13 +1,13 @@
 const SECTION_OPTIONS = [
-  { key: "stats", label: "KPI strip", description: "Top-line metrics and pipeline pulse." },
-  { key: "workspacePulse", label: "Workspace pulse", description: "Workspace identity, coverage, and operating scope." },
-  { key: "savedViews", label: "Saved views", description: "Quick access to high-value lead segments." },
-  { key: "priorityPlays", label: "Priority plays", description: "AI-ranked deal moves from command center." },
-  { key: "todayFocus", label: "Today focus", description: "Daily operating shortlist." },
-  { key: "executionQueue", label: "Execution queue", description: "Next tasks, follow-ups, and execution work." },
-  { key: "riskRadar", label: "Risk radar", description: "Deals most likely to slip." },
-  { key: "pipelineOverview", label: "Pipeline overview", description: "Stage distribution and movement." },
-  { key: "utilities", label: "Revenue utilities", description: "Coach, follow-up, pricing, and capture tools." },
+  { key: "stats", label: "Key metrics", description: "Totals and pipeline snapshot." },
+  { key: "workspacePulse", label: "Workspace summary", description: "Name, scope, and segment counts." },
+  { key: "savedViews", label: "Saved views", description: "Shortcuts to filtered lead lists." },
+  { key: "priorityPlays", label: "Priority actions", description: "Suggested next steps on open deals." },
+  { key: "todayFocus", label: "Today", description: "What to handle first." },
+  { key: "executionQueue", label: "Tasks & follow-ups", description: "Queued work and reminders." },
+  { key: "riskRadar", label: "At-risk deals", description: "Deals that may need attention." },
+  { key: "pipelineOverview", label: "Pipeline by stage", description: "How leads spread across stages." },
+  { key: "utilities", label: "Shortcuts", description: "Links to tools and your public lead form." },
 ];
 
 const DENSITY_OPTIONS = [
@@ -37,10 +37,10 @@ export default function DashboardCustomizer({
       <div className="w-full max-w-xl h-full overflow-y-auto border-l border-white/10 bg-neutral-950 p-6">
         <div className="flex items-start justify-between gap-4 mb-6">
           <div>
-            <div className="text-xs uppercase tracking-[0.2em] text-white/35 mb-2">Customize Workspace</div>
-            <h2 className="text-2xl font-bold mb-2">Shape the dashboard around your workflow</h2>
-            <p className="text-sm text-white/45 leading-6">
-              Choose a workspace mode, then hide or show the panels that actually help you close, expand, or operate.
+            <div className="text-xs uppercase tracking-[0.18em] text-white/35 mb-2">Settings</div>
+            <h2 className="text-xl font-semibold mb-2">Dashboard & appearance</h2>
+            <p className="text-sm text-white/45 leading-relaxed">
+              Pick a layout preset, then show or hide panels. Your choices are saved for next time.
             </p>
           </div>
           <button
@@ -111,14 +111,14 @@ export default function DashboardCustomizer({
         <div className="border border-white/10 rounded-2xl p-5 bg-white/[0.02]">
           <div className="flex items-center justify-between gap-3 mb-4">
             <div>
-              <div className="text-sm font-semibold">Visible panels</div>
-              <div className="text-xs text-white/45 mt-1">Turn sections on or off based on your role and working style.</div>
+              <div className="text-sm font-semibold">Panels</div>
+              <div className="text-xs text-white/45 mt-1">Show only what you use.</div>
             </div>
             <button
               onClick={onReset}
               className="px-3 py-2 border border-white/10 rounded-xl text-xs text-white/60 hover:text-white transition"
             >
-              Reset mode defaults
+              Reset to preset
             </button>
           </div>
 
@@ -150,7 +150,7 @@ export default function DashboardCustomizer({
             ))}
           </div>
           <div className="text-xs text-white/35 mt-4">
-            Tip: drag panels directly on the dashboard using the handle in each card to reorder the workspace.
+            Reorder panels on the dashboard by dragging the ⋮⋮ handle on each card.
           </div>
         </div>
       </div>

@@ -29,13 +29,14 @@ export default function DealRisks({ limit = 3 }) {
   const risks = data.risks.slice(0, limit);
 
   return (
-    <div className="border border-red-500/20 bg-red-500/[0.04] rounded-2xl p-5">
+    <div className="border border-white/10 bg-white/[0.02] rounded-2xl p-5">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-base font-bold text-red-300">
-            Deal risk radar · {data.total} deal{data.total > 1 ? "s" : ""} at risk
+          <h2 className="text-base font-semibold">
+            At-risk deals
+            <span className="text-white/40 font-normal"> · {data.total}</span>
           </h2>
-          <p className="text-white/40 text-xs mt-1">The deals most likely to slip if nobody intervenes.</p>
+          <p className="text-white/40 text-xs mt-1">May need attention soon.</p>
         </div>
         <button onClick={fetchRisks} className="text-xs text-white/30 hover:text-white transition">
           Refresh

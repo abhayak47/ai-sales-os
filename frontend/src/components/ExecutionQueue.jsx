@@ -71,18 +71,18 @@ export default function ExecutionQueue({ leadId = null, compact = false, refresh
     <div className="border border-white/10 rounded-2xl p-5 bg-white/[0.02]">
       <div className="flex items-center justify-between gap-3 mb-4">
         <div>
-          <h3 className="text-base font-semibold">Execution Queue</h3>
+          <h3 className="text-base font-semibold">Tasks & follow-ups</h3>
           <p className="text-white/40 text-sm">
-            {leadId ? "Saved AI tasks and touches for this deal." : "Your AI-generated tasks, follow-ups, and sequence touches."}
+            {leadId ? "Tasks for this lead." : "Queued tasks and next touches."}
           </p>
         </div>
       </div>
 
       {loading ? (
-        <div className="text-white/35 text-sm">Loading execution queue...</div>
+        <div className="text-white/35 text-sm">Loading…</div>
       ) : queue.length === 0 ? (
         <div className="text-white/35 text-sm">
-          No execution items yet. Activate the workflow from Strategy Lab to generate them.
+          No tasks yet. Add follow-ups from a lead or use Strategy Lab to generate them.
         </div>
       ) : (
         <div className="space-y-3">

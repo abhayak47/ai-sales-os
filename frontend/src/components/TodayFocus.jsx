@@ -48,11 +48,11 @@ export default function TodayFocus({ limit = 3 }) {
     <div className="border border-white/10 rounded-2xl p-5 bg-white/[0.02]">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-base font-semibold">Today&apos;s Focus</h2>
+          <h2 className="text-base font-semibold">Today</h2>
           <p className="text-white/40 text-xs mt-1">{focus.date}</p>
         </div>
         <span className="text-xs text-white/30 bg-white/5 px-3 py-1 rounded-full">
-          {focus.actions.length} actions
+          {focus.actions.length} items
         </span>
       </div>
 

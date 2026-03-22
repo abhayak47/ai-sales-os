@@ -6,15 +6,15 @@ import { useTheme } from "../context/ThemeContext";
 
 const NAV_ITEMS = [
   { icon: "DB", label: "Dashboard", path: "/dashboard" },
-  { icon: "SC", label: "Sales Coach", path: "/coach" },
-  { icon: "FU", label: "AI Follow-Up", path: "/followup" },
+  { icon: "SC", label: "Coach", path: "/coach" },
+  { icon: "FU", label: "Follow-up", path: "/followup" },
   { icon: "PL", label: "Pipeline", path: "/pipeline" },
   { icon: "LD", label: "Leads", path: "/leads" },
   { icon: "CT", label: "Contacts", path: "/contacts" },
-  { icon: "EM", label: "Email Hub", path: "/emails" },
+  { icon: "EM", label: "Email", path: "/emails" },
   { icon: "RP", label: "Reports", path: "/reports" },
   { icon: "TM", label: "Team", path: "/team" },
-  { icon: "PR", label: "Pricing", path: "/pricing" },
+  { icon: "PR", label: "Plans", path: "/pricing" },
 ];
 
 function ThemePicker() {
@@ -80,7 +80,7 @@ export default function Sidebar() {
             <div className="font-semibold text-white">{workspaceName}</div>
             <div className="text-xs text-white/45 mt-1">{roleLabel} · {user.plan || "free"} plan</div>
             <div className="text-xs text-white/35 mt-3 truncate">{workspaceSlug || user.email}</div>
-            <div className="mt-3 text-xs text-cyan-200">{user.ai_credits || 0} AI credits live</div>
+            <div className="mt-3 text-xs text-cyan-200/90">{user.ai_credits || 0} AI credits</div>
           </div>
         )}
         <nav className="flex flex-col gap-1 flex-1">
@@ -113,7 +113,7 @@ export default function Sidebar() {
       <div className={`hidden md:flex w-72 ${shellClass} p-6 flex-col min-h-screen`}>
         <div className="mb-8">
           <div className="text-xl font-bold">AI Sales OS</div>
-          <div className="text-sm text-white/35 mt-2">Revenue operating system</div>
+          <div className="text-sm text-white/35 mt-2">Sales workspace</div>
         </div>
         {user && (
           <div className="border border-white/10 rounded-2xl p-4 bg-white/[0.02] mb-6">
@@ -121,7 +121,7 @@ export default function Sidebar() {
             <div className="font-semibold text-white">{workspaceName}</div>
             <div className="text-xs text-white/45 mt-1">{roleLabel} · {user.plan || "free"} plan</div>
             <div className="text-xs text-white/35 mt-3 truncate">{workspaceSlug || user.email}</div>
-            <div className="mt-3 text-xs text-cyan-200">{user.ai_credits || 0} AI credits live</div>
+            <div className="mt-3 text-xs text-cyan-200/90">{user.ai_credits || 0} AI credits</div>
           </div>
         )}
         <nav className="flex flex-col gap-1 flex-1">
