@@ -24,6 +24,10 @@ class TaskResponse(BaseModel):
     sequence_step: Optional[int] = None
     completed_at: Optional[datetime] = None
     created_at: datetime
+    lead_name: Optional[str] = None
+    lead_email: Optional[str] = None
+    lead_phone: Optional[str] = None
+    lead_company: Optional[str] = None
 
     class Config:
         from_attributes = True

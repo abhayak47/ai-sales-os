@@ -352,6 +352,7 @@ def get_smart_followup(
         "lead_name": lead.name,
         "lead_status": lead.status,
         "lead_email": lead.email,
+        "lead_phone": lead.phone,
         "last_activity": last_activity.title if last_activity else "No activity yet",
         "activity_count": activity_count,
         "context_used": context,

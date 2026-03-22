@@ -54,7 +54,7 @@ Return ONLY this exact JSON format, nothing else:
     return _json_completion(prompt, temperature=0.7, max_tokens=1000)
 
 
-def analyze_lead(name: str, company: str, status: str, notes: str) -> dict:
+def analyze_lead(name: str, company: str, status: str, notes: str, timeline_context: str = "") -> dict:
     prompt = f"""
 You are an expert sales coach and deal analyzer with 20 years of experience.
 
@@ -64,6 +64,8 @@ Lead Name: {name}
 Company: {company}
 Current Status: {status}
 Notes/History: {notes if notes else "No notes yet"}
+Timeline Memory:
+{timeline_context or "No additional timeline memory"}
 
 Provide a detailed analysis in this EXACT JSON format:
 {{
@@ -84,7 +86,7 @@ Return ONLY the JSON, nothing else.
     return _json_completion(prompt, temperature=0.7, max_tokens=800)
 
 
-def score_lead(name: str, company: str, status: str, notes: str) -> dict:
+def score_lead(name: str, company: str, status: str, notes: str, timeline_context: str = "") -> dict:
     prompt = f"""
 You are an AI lead scoring system. Score this lead based on available information.
 
@@ -92,6 +94,7 @@ Lead Name: {name}
 Company: {company or "Unknown"}
 Status: {status}
 Notes: {notes or "No notes"}
+Timeline Memory: {timeline_context or "No additional timeline memory"}
 
 Return ONLY this JSON:
 {{
@@ -202,13 +205,29 @@ Keep responses concise but powerful. Use emojis sparingly for emphasis.
     )
     return response.choices[0].message.content.strip()
 
-def analyze_meeting_notes(notes: str, lead_name: str, company: str) -> dict:
+def analyze_meeting_notes(
+    notes: str,
+    lead_name: str,
+    company: str,
+    context: str = "",
+    mom_template: str = "",
+    research_briefs: list | None = None,
+) -> dict:
+    research_lines = "\n".join(
+        [f"- {item['title']}: {item['snippet']}" for item in (research_briefs or [])]
+    ) or "No external research available."
     prompt = f"""
 You are an expert sales meeting analyst. Analyze these meeting notes and extract structured information.
 
 Lead Name: {lead_name}
 Company: {company or "Unknown"}
+Lead Timeline Context:
+{context or "No additional lead context"}
 Meeting Notes: {notes}
+Minutes of Meeting preferred format:
+{mom_template or "Create a clean professional MoM with attendees, discussion summary, decisions, action items, and next steps."}
+Relevant practical research:
+{research_lines}
 
 Return ONLY this JSON:
 {{
@@ -218,13 +237,16 @@ Return ONLY this JSON:
     "objections": ["<objection raised if any>"],
     "next_steps": "<clear next steps agreed upon>",
     "deal_status": "<your assessment: Positive/Neutral/Negative>",
-    "follow_up_email": "Subject: [subject]\\n\\nDear {lead_name},\\n\\n[professional follow-up email body referencing the meeting]\\n\\nBest regards"
+    "follow_up_email": "Subject: [subject]\\n\\nDear {lead_name},\\n\\n[professional follow-up email body referencing the meeting and history]\\n\\nBest regards",
+    "minutes_of_meeting": "<minutes of meeting in the user's requested format>",
+    "tailored_solution_ideas": ["<practical solution idea 1>", "<practical solution idea 2>", "<practical solution idea 3>"],
+    "deal_memory": ["<important prior context that matters now>", "<another memory point>"]
 }}
 
-Be specific and use actual details from the notes.
+Be specific and use actual details from the notes, lead history, and practical research when available.
 Return ONLY the JSON.
 """
-    return _json_completion(prompt, temperature=0.5, max_tokens=1000)
+    return _json_completion(prompt, temperature=0.45, max_tokens=1600)
 
 
 def generate_deal_strategy(lead_name: str, company: str, status: str, context: str) -> dict:
@@ -338,7 +360,16 @@ Return ONLY valid JSON:
     return _json_completion(prompt, temperature=0.4, max_tokens=900)
 
 
-def generate_meeting_prep(lead_name: str, company: str, status: str, context: str) -> dict:
+def generate_meeting_prep(
+    lead_name: str,
+    company: str,
+    status: str,
+    context: str,
+    research_briefs: list | None = None,
+) -> dict:
+    research_lines = "\n".join(
+        [f"- {item['title']}: {item['snippet']}" for item in (research_briefs or [])]
+    ) or "No web research available."
     prompt = f"""
 You are a strategic account executive preparing for a make-or-break meeting.
 
@@ -347,6 +378,8 @@ Company: {company}
 Stage: {status}
 Context:
 {context}
+Relevant web research:
+{research_lines}
 
 Return ONLY valid JSON:
 {{
@@ -354,10 +387,12 @@ Return ONLY valid JSON:
   "agenda": ["<agenda item 1>", "<agenda item 2>", "<agenda item 3>"],
   "strategic_questions": ["<question 1>", "<question 2>", "<question 3>", "<question 4>"],
   "red_flags": ["<red flag 1>", "<red flag 2>", "<red flag 3>"],
-  "close_plan": ["<close move 1>", "<close move 2>", "<close move 3>"]
+  "close_plan": ["<close move 1>", "<close move 2>", "<close move 3>"],
+  "web_insights": ["<market or practical insight 1>", "<market or practical insight 2>", "<market or practical insight 3>"],
+  "practical_solutions": ["<tailored solution option 1>", "<tailored solution option 2>", "<tailored solution option 3>"]
 }}
 """
-    return _json_completion(prompt, temperature=0.5, max_tokens=1000)
+    return _json_completion(prompt, temperature=0.45, max_tokens=1400)
 
 
 def generate_execution_plan(lead_name: str, company: str, status: str, context: str) -> dict:

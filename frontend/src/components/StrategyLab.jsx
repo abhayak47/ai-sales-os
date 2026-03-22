@@ -377,6 +377,10 @@ export default function StrategyLab({ leadId }) {
                 <ListBlock title="Red Flags" items={outputs.meetingPrep.red_flags} />
                 <ListBlock title="Close Plan" items={outputs.meetingPrep.close_plan} ordered />
               </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ListBlock title="Web Insights" items={outputs.meetingPrep.web_insights} />
+                <ListBlock title="Practical Solutions" items={outputs.meetingPrep.practical_solutions} />
+              </div>
             </div>
           ) : (
             <p className="text-white/45 text-sm">{TOOL_CONFIG.meetingPrep.empty}</p>

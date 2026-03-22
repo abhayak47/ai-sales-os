@@ -52,6 +52,7 @@ class EmailSequenceResponse(BaseModel):
 class MeetingAnalysisRequest(BaseModel):
     lead_id: int
     notes: str
+    mom_template: Optional[str] = None
 
 class MeetingAnalysisResponse(BaseModel):
     summary: str
@@ -61,6 +62,9 @@ class MeetingAnalysisResponse(BaseModel):
     next_steps: str
     deal_status: str
     follow_up_email: str
+    minutes_of_meeting: str
+    tailored_solution_ideas: List[str]
+    deal_memory: List[str]
 
 
 class LeadContextRequest(BaseModel):
@@ -120,6 +124,8 @@ class MeetingPrepResponse(BaseModel):
     strategic_questions: List[str]
     red_flags: List[str]
     close_plan: List[str]
+    web_insights: List[str]
+    practical_solutions: List[str]
 
 
 class ExecutionTask(BaseModel):

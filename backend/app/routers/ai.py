@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
@@ -43,6 +43,8 @@ from app.services.ai import (
     score_lead,
 )
 from app.services.auth import deduct_credits, get_current_user
+from app.services.documents import extract_text_from_upload
+from app.services.research import search_web_briefs
 
 router = APIRouter(prefix="/ai", tags=["AI"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
@@ -69,23 +71,55 @@ def _refund_credits(db: Session, user, amount: int) -> None:
 
 
 def _get_owned_lead(lead_id: int, user_id: int, db: Session) -> Lead:
-    lead = db.query(Lead).filter(
-        Lead.id == lead_id,
-        Lead.user_id == user_id,
-    ).first()
+    lead = db.query(Lead).filter(Lead.id == lead_id, Lead.user_id == user_id).first()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
     return lead
 
 
-def _build_lead_context(lead: Lead, db: Session) -> str:
-    activities = (
+def _recent_activities(lead_id: int, db: Session):
+    return (
         db.query(Activity)
-        .filter(Activity.lead_id == lead.id)
+        .filter(Activity.lead_id == lead_id)
         .order_by(Activity.created_at.desc())
-        .limit(8)
+        .limit(10)
         .all()
     )
+
+
+def _build_lead_context(lead: Lead, db: Session) -> str:
+    activities = list(reversed(_recent_activities(lead.id, db)))
+    activity_lines = []
+    for activity in activities:
+        description = activity.description or "No additional detail"
+        activity_lines.append(f"- {activity.type}: {activity.title}. Detail: {description}")
+
+    last_activity = lead.last_activity_at.isoformat() if lead.last_activity_at else "No recorded activity"
+
+    return "\n".join(
+        [
+            f"Lead name: {lead.name}",
+            f"Company: {lead.company or 'Unknown'}",
+            f"Status: {lead.status}",
+            f"Email: {lead.email or 'Unknown'}",
+            f"Phone: {lead.phone or 'Unknown'}",
+            f"Lead notes: {lead.notes or 'No notes yet'}",
+            f"Lead score: {lead.score or 0}/100",
+            f"Predicted revenue: INR {lead.predicted_revenue or 0}",
+            f"Relationship score: {lead.relationship_score or 50}/100",
+            f"Health score: {lead.health_status or 'Warm'} ({lead.health_score or 50}/100)",
+            f"Suggested follow-up date: {lead.follow_up_date or 'Not set'}",
+            f"Last activity timestamp: {last_activity}",
+            "Timeline notes:",
+            "\n".join(activity_lines) if activity_lines else "- No activities logged yet",
+        ]
+    )
+
+
+def _build_research_query(lead: Lead, db: Session) -> str:
+    activities = _recent_activities(lead.id, db)
+    latest_summary = activities[0].description if activities and activities[0].description else lead.notes or ""
+    return f"{lead.company or lead.name} {latest_summary} industry opportunities practical solution ideas"
 
 
 def _resolve_due_at(timing: str):
@@ -102,36 +136,6 @@ def _resolve_due_at(timing: str):
     if "week" in normalized:
         return now + timedelta(days=5)
     return now + timedelta(days=1)
-
-    activity_lines = []
-    for activity in reversed(activities):
-        description = activity.description or "No additional detail"
-        activity_lines.append(
-            f"- {activity.type}: {activity.title}. Detail: {description}"
-        )
-
-    last_activity = (
-        lead.last_activity_at.isoformat() if lead.last_activity_at else "No recorded activity"
-    )
-
-    return "\n".join(
-        [
-            f"Lead name: {lead.name}",
-            f"Company: {lead.company or 'Unknown'}",
-            f"Status: {lead.status}",
-            f"Email: {lead.email or 'Unknown'}",
-            f"Phone: {lead.phone or 'Unknown'}",
-            f"Notes: {lead.notes or 'No notes yet'}",
-            f"Lead score: {lead.score or 0}/100",
-            f"Predicted revenue: INR {lead.predicted_revenue or 0}",
-            f"Relationship score: {lead.relationship_score or 50}/100",
-            f"Health: {lead.health_status or 'Warm'} ({lead.health_score or 50}/100)",
-            f"Suggested follow-up date: {lead.follow_up_date or 'Not set'}",
-            f"Last activity timestamp: {last_activity}",
-            "Recent timeline:",
-            "\n".join(activity_lines) if activity_lines else "- No activities logged yet",
-        ]
-    )
 
 
 @router.get("/credit-costs")
@@ -180,6 +184,7 @@ def analyze_lead_endpoint(
             company=lead.company or "Unknown",
             status=lead.status,
             notes=lead.notes or "",
+            timeline_context=_build_lead_context(lead, db),
         )
     except Exception as exc:
         _refund_credits(db, user, CREDIT_COSTS["analyze_lead"])
@@ -205,6 +210,7 @@ def score_lead_endpoint(
             company=lead.company or "Unknown",
             status=lead.status,
             notes=lead.notes or "",
+            timeline_context=_build_lead_context(lead, db),
         )
         lead.score = result["score"]
         lead.predicted_revenue = result["predicted_revenue"]
@@ -232,7 +238,7 @@ def email_sequence_endpoint(
         result = generate_email_sequence(
             name=lead.name,
             company=lead.company or "their company",
-            context=request.context,
+            context=f"{request.context}\n\nTimeline context:\n{_build_lead_context(lead, db)}",
             tone=request.tone,
         )
     except Exception as exc:
@@ -255,23 +261,15 @@ def sales_coach(
 
     leads = db.query(Lead).filter(Lead.user_id == user.id).all()
     if leads:
-        lines = ["Current Pipeline:"]
+        lines = ["Current pipeline with real context:"]
         for lead in leads:
-            line = f"- {lead.name} ({lead.company or 'No company'}) | Status: {lead.status}"
-            if lead.notes:
-                line += f" | Notes: {lead.notes}"
-            if lead.score:
-                line += f" | Score: {lead.score}/100"
-            lines.append(line)
-        leads_context = "\n".join(lines)
+            lines.append(_build_lead_context(lead, db))
+        leads_context = "\n\n".join(lines)
     else:
         leads_context = "No leads in pipeline yet."
 
     try:
-        chat_history = [
-            {"role": msg.role, "content": msg.content}
-            for msg in request.chat_history
-        ]
+        chat_history = [{"role": msg.role, "content": msg.content} for msg in request.chat_history]
         result = sales_coach_chat(
             message=request.message,
             leads_context=leads_context,
@@ -294,15 +292,55 @@ def meeting_analysis_endpoint(
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     lead = _get_owned_lead(request.lead_id, user.id, db)
-
     if not deduct_credits(db, user, "meeting_analysis", CREDIT_COSTS["meeting_analysis"]):
         raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['meeting_analysis']} credits. Please upgrade.")
 
     try:
+        research_briefs = search_web_briefs(_build_research_query(lead, db), limit=5)
         result = analyze_meeting_notes(
             notes=request.notes,
             lead_name=lead.name,
             company=lead.company or "Unknown",
+            context=_build_lead_context(lead, db),
+            mom_template=request.mom_template or "",
+            research_briefs=research_briefs,
+        )
+    except Exception as exc:
+        _refund_credits(db, user, CREDIT_COSTS["meeting_analysis"])
+        raise HTTPException(status_code=500, detail=f"AI error: {str(exc)}")
+
+    return result
+
+
+@router.post("/meeting-analysis/upload", response_model=MeetingAnalysisResponse)
+async def meeting_analysis_upload_endpoint(
+    lead_id: int = Form(...),
+    mom_template: str = Form(""),
+    notes: str = Form(""),
+    transcript_file: UploadFile = File(...),
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(token, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    lead = _get_owned_lead(lead_id, user.id, db)
+    if not deduct_credits(db, user, "meeting_analysis", CREDIT_COSTS["meeting_analysis"]):
+        raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['meeting_analysis']} credits. Please upgrade.")
+
+    try:
+        file_content = await transcript_file.read()
+        transcript_text = extract_text_from_upload(transcript_file.filename or "", file_content)
+        merged_notes = "\n\n".join(part for part in [notes.strip(), transcript_text.strip()] if part)
+        research_briefs = search_web_briefs(_build_research_query(lead, db), limit=5)
+        result = analyze_meeting_notes(
+            notes=merged_notes,
+            lead_name=lead.name,
+            company=lead.company or "Unknown",
+            context=_build_lead_context(lead, db),
+            mom_template=mom_template,
+            research_briefs=research_briefs,
         )
     except Exception as exc:
         _refund_credits(db, user, CREDIT_COSTS["meeting_analysis"])
@@ -428,6 +466,7 @@ def meeting_prep_endpoint(
             company=lead.company or "Unknown",
             status=lead.status,
             context=_build_lead_context(lead, db),
+            research_briefs=search_web_briefs(_build_research_query(lead, db), limit=6),
         )
     except Exception as exc:
         _refund_credits(db, user, CREDIT_COSTS["meeting_prep"])

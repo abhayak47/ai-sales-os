@@ -38,6 +38,29 @@ export default function ExecutionQueue({ leadId = null, compact = false, refresh
     }
   };
 
+  const launchTask = async (task) => {
+    const channel = (task.channel || "").toLowerCase();
+
+    if (channel === "whatsapp") {
+      window.open(`https://wa.me/?text=${encodeURIComponent(task.content || task.description || "")}`, "_blank");
+    } else if (channel === "email") {
+      window.open(
+        `mailto:${task.lead_email || ""}?subject=${encodeURIComponent(task.subject || task.title || "")}&body=${encodeURIComponent(task.content || "")}`,
+        "_blank"
+      );
+    } else if (channel === "call") {
+      window.open(`tel:${task.lead_phone || ""}`, "_self");
+    } else if (channel === "linkedin") {
+      await navigator.clipboard.writeText(task.content || task.description || "");
+      alert("LinkedIn message copied. Open LinkedIn and paste it.");
+    } else {
+      await navigator.clipboard.writeText(task.content || task.description || task.title);
+      alert("Task content copied.");
+    }
+
+    await markCompleted(task.id);
+  };
+
   return (
     <div className="border border-white/10 rounded-2xl p-5 bg-white/[0.02]">
       <div className="flex items-center justify-between gap-3 mb-4">
@@ -78,17 +101,28 @@ export default function ExecutionQueue({ leadId = null, compact = false, refresh
                     </div>
                   )}
                   <div className="flex items-center gap-3 mt-3 text-xs text-white/35 flex-wrap">
+                    {task.lead_name && <span>{task.lead_name}</span>}
                     {task.channel && <span>{task.channel}</span>}
                     {task.sequence_step && <span>Step {task.sequence_step}</span>}
                     {task.due_at && <span>Due {new Date(task.due_at).toLocaleString()}</span>}
                   </div>
                 </div>
-                <button
-                  onClick={() => markCompleted(task.id)}
-                  className="px-3 py-2 text-xs rounded-lg bg-white text-black font-semibold whitespace-nowrap"
-                >
-                  Complete
-                </button>
+                <div className="flex flex-col gap-2">
+                  {(task.kind === "follow_up" || task.kind === "sequence_step") && (
+                    <button
+                      onClick={() => launchTask(task)}
+                      className="px-3 py-2 text-xs rounded-lg bg-emerald-400 text-black font-semibold whitespace-nowrap"
+                    >
+                      Send Now
+                    </button>
+                  )}
+                  <button
+                    onClick={() => markCompleted(task.id)}
+                    className="px-3 py-2 text-xs rounded-lg bg-white text-black font-semibold whitespace-nowrap"
+                  >
+                    Complete
+                  </button>
+                </div>
               </div>
             </div>
           ))}

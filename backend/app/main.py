@@ -31,6 +31,17 @@ SQLITE_COMPAT_COLUMNS = {
         "last_activity_at": "ALTER TABLE leads ADD COLUMN last_activity_at DATETIME",
         "relationship_score": "ALTER TABLE leads ADD COLUMN relationship_score INTEGER DEFAULT 50",
     },
+    "tasks": {
+        "kind": "ALTER TABLE tasks ADD COLUMN kind VARCHAR DEFAULT 'task'",
+        "priority": "ALTER TABLE tasks ADD COLUMN priority VARCHAR DEFAULT 'medium'",
+        "status": "ALTER TABLE tasks ADD COLUMN status VARCHAR DEFAULT 'open'",
+        "channel": "ALTER TABLE tasks ADD COLUMN channel VARCHAR",
+        "subject": "ALTER TABLE tasks ADD COLUMN subject VARCHAR",
+        "content": "ALTER TABLE tasks ADD COLUMN content TEXT",
+        "due_at": "ALTER TABLE tasks ADD COLUMN due_at DATETIME",
+        "sequence_step": "ALTER TABLE tasks ADD COLUMN sequence_step INTEGER",
+        "completed_at": "ALTER TABLE tasks ADD COLUMN completed_at DATETIME",
+    },
 }
 
 
