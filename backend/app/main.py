@@ -37,6 +37,8 @@ SQLITE_COMPAT_COLUMNS = {
         "updated_at": "ALTER TABLE leads ADD COLUMN updated_at DATETIME",
         "last_activity_at": "ALTER TABLE leads ADD COLUMN last_activity_at DATETIME",
         "relationship_score": "ALTER TABLE leads ADD COLUMN relationship_score INTEGER DEFAULT 50",
+        "billing_city": "ALTER TABLE leads ADD COLUMN billing_city VARCHAR",
+        "billing_country": "ALTER TABLE leads ADD COLUMN billing_country VARCHAR",
     },
     "tasks": {
         "organization_id": "ALTER TABLE tasks ADD COLUMN organization_id INTEGER",

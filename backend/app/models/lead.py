@@ -15,6 +15,8 @@ class Lead(Base):
     email = Column(String, nullable=True)
     phone = Column(String, nullable=True)
     company = Column(String, nullable=True)
+    billing_city = Column(String, nullable=True)
+    billing_country = Column(String, nullable=True)
     status = Column(String, default="New")
     segment = Column(String, default="general")
     tags = Column(JSON, default=list)

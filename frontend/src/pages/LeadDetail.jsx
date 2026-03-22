@@ -441,6 +441,11 @@ export default function LeadDetail() {
             </a>
           )}
           {lead.company && <div>{lead.company}</div>}
+          {(lead.billing_city || lead.billing_country) && (
+            <div>
+              {[lead.billing_city, lead.billing_country].filter(Boolean).join(", ")}
+            </div>
+          )}
         </div>
       </div>
     </div>

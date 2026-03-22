@@ -7,6 +7,8 @@ class LeadCreate(BaseModel):
     email: Optional[str] = None
     phone: Optional[str] = None
     company: Optional[str] = None
+    billing_city: Optional[str] = None
+    billing_country: Optional[str] = None
     status: Optional[str] = "New"
     owner_user_id: Optional[int] = None
     segment: Optional[str] = "general"
@@ -18,6 +20,8 @@ class LeadUpdate(BaseModel):
     email: Optional[str] = None
     phone: Optional[str] = None
     company: Optional[str] = None
+    billing_city: Optional[str] = None
+    billing_country: Optional[str] = None
     status: Optional[str] = None
     owner_user_id: Optional[int] = None
     segment: Optional[str] = None
@@ -33,6 +37,8 @@ class LeadResponse(BaseModel):
     email: Optional[str] = None
     phone: Optional[str] = None
     company: Optional[str] = None
+    billing_city: Optional[str] = None
+    billing_country: Optional[str] = None
     status: str
     segment: Optional[str] = "general"
     tags: Optional[List[str]] = None
@@ -75,8 +81,12 @@ class LeadListMeta(BaseModel):
     sort_dir: str
 
 
+class LeadListItem(LeadResponse):
+    owner_name: Optional[str] = None
+
+
 class LeadListResponse(BaseModel):
-    items: List[LeadResponse]
+    items: List[LeadListItem]
     meta: LeadListMeta
     summary: LeadListSummary
 

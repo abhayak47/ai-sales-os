@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.activity import Activity
 from app.models.lead import Lead
-from app.schemas.lead import LeadCreate, LeadListResponse, LeadResponse, LeadUpdate, SavedViewsResponse
+from app.models.user import User
+from app.schemas.lead import LeadCreate, LeadListItem, LeadListResponse, LeadResponse, LeadUpdate, SavedViewsResponse
 from app.services.auth import get_current_user
 from app.services.automation import create_stage_automation_tasks
 from app.services.workspace import can_edit_lead, require_role, workspace_query
@@ -32,7 +33,16 @@ def _base_query(user, db: Session):
     return workspace_query(db, Lead, user)
 
 
-def _apply_filters(query, search: str | None, status: str | None, segment: str | None, tag: str | None):
+def _apply_filters(
+    query,
+    search: str | None,
+    status: str | None,
+    segment: str | None,
+    tag: str | None,
+    billing_city: str | None = None,
+    billing_country: str | None = None,
+    untouched_only: bool = False,
+):
     if status and status != "All":
         query = query.filter(Lead.status == status)
     if segment and segment != "All":
@@ -41,6 +51,12 @@ def _apply_filters(query, search: str | None, status: str | None, segment: str |
         normalized_tag = tag.strip().lower()
         if normalized_tag:
             query = query.filter(cast(Lead.tags, String).ilike(f'%"{normalized_tag}"%'))
+    if billing_city and billing_city.strip():
+        query = query.filter(Lead.billing_city.ilike(f"%{billing_city.strip()}%"))
+    if billing_country and billing_country.strip():
+        query = query.filter(Lead.billing_country.ilike(f"%{billing_country.strip()}%"))
+    if untouched_only:
+        query = query.filter(Lead.last_activity_at.is_(None))
     if search:
         pattern = f"%{search.strip()}%"
         query = query.filter(
@@ -50,6 +66,8 @@ def _apply_filters(query, search: str | None, status: str | None, segment: str |
                 Lead.email.ilike(pattern),
                 Lead.phone.ilike(pattern),
                 Lead.notes.ilike(pattern),
+                Lead.billing_city.ilike(pattern),
+                Lead.billing_country.ilike(pattern),
             )
         )
     return query
@@ -151,12 +169,34 @@ def _build_saved_views(user, db: Session):
     ]
 
 
+def _lead_list_items(db: Session, rows: list[Lead]) -> list[LeadListItem]:
+    if not rows:
+        return []
+    owner_ids = {r.owner_user_id or r.user_id for r in rows}
+    users = db.query(User).filter(User.id.in_(owner_ids)).all()
+    user_map = {u.id: u.full_name for u in users}
+    out: list[LeadListItem] = []
+    for lead in rows:
+        base = LeadResponse.model_validate(lead)
+        oid = lead.owner_user_id or lead.user_id
+        out.append(
+            LeadListItem(
+                **base.model_dump(),
+                owner_name=user_map.get(oid),
+            )
+        )
+    return out
+
+
 @router.get("/", response_model=LeadListResponse)
 def get_leads(
     search: str | None = None,
     status: str | None = None,
     segment: str | None = None,
     tag: str | None = None,
+    billing_city: str | None = None,
+    billing_country: str | None = None,
+    untouched_only: bool = False,
     view: str | None = None,
     sort_by: Literal["updated_at", "created_at", "last_activity_at", "score", "revenue", "name", "company", "status"] = "updated_at",
     sort_dir: Literal["asc", "desc"] = "desc",
@@ -166,7 +206,10 @@ def get_leads(
     db: Session = Depends(get_db),
 ):
     user = get_user(token, db)
-    filtered_query = _apply_saved_view(_apply_filters(_base_query(user, db), search, status, segment, tag), view)
+    filtered_query = _apply_saved_view(
+        _apply_filters(_base_query(user, db), search, status, segment, tag, billing_city, billing_country, untouched_only),
+        view,
+    )
     total = filtered_query.count()
     items = (
         _apply_sort(filtered_query, sort_by, sort_dir)
@@ -177,7 +220,7 @@ def get_leads(
     total_pages = max((total + page_size - 1) // page_size, 1)
 
     return {
-        "items": items,
+        "items": _lead_list_items(db, items),
         "meta": {
             "page": page,
             "page_size": page_size,
