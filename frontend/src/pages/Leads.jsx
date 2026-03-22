@@ -57,9 +57,11 @@ export default function Leads() {
 
   useEffect(() => {
     const view = searchParams.get("view") || "";
-    if (view !== query.view) {
-      setQuery((current) => ({ ...current, view, page: 1 }));
-    }
+    const status = searchParams.get("status") || "All";
+    setQuery((current) => {
+      if (view === current.view && status === current.status) return current;
+      return { ...current, view, status, page: 1 };
+    });
   }, [searchParams]);
 
   const fetchLeads = async (searchOverride = query.search) => {
