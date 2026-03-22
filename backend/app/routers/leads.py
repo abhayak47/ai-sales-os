@@ -5,6 +5,7 @@ from typing import List
 from app.database import get_db
 from app.schemas.lead import LeadCreate, LeadUpdate, LeadResponse
 from app.models.lead import Lead
+from app.models.activity import Activity
 from app.services.auth import get_current_user
 
 router = APIRouter(prefix="/leads", tags=["Leads"])
@@ -103,8 +104,6 @@ def calculate_health(
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
 
-    # Import Activity here
-    from app.models.lead import Activity
     activities = db.query(Activity).filter(
         Activity.lead_id == lead_id
     ).all()

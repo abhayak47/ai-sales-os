@@ -13,6 +13,7 @@ import EmailSequence from "./pages/EmailSequence";
 import Onboarding from "./pages/Onboarding";
 import LeadDetail from "./pages/LeadDetail";
 import Pipeline from "./pages/Pipeline";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   return (
@@ -22,16 +23,16 @@ function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/followup" element={<FollowUp />} />
-          <Route path="/leads" element={<Leads />} />
-          <Route path="/leads/:id" element={<LeadDetail />} />
-          <Route path="/pipeline" element={<Pipeline />} />
+          <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/followup" element={<ProtectedRoute><FollowUp /></ProtectedRoute>} />
+          <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />
+          <Route path="/leads/:id" element={<ProtectedRoute><LeadDetail /></ProtectedRoute>} />
+          <Route path="/pipeline" element={<ProtectedRoute><Pipeline /></ProtectedRoute>} />
           <Route path="/pricing" element={<Pricing />} />
-          <Route path="/coach" element={<SalesCoach />} />
+          <Route path="/coach" element={<ProtectedRoute><SalesCoach /></ProtectedRoute>} />
           <Route path="/capture/:username" element={<Capture />} />
-          <Route path="/sequence" element={<EmailSequence />} />
+          <Route path="/sequence" element={<ProtectedRoute><EmailSequence /></ProtectedRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

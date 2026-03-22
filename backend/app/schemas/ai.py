@@ -48,3 +48,75 @@ class EmailDay(BaseModel):
 
 class EmailSequenceResponse(BaseModel):
     sequence: List[EmailDay]
+
+class MeetingAnalysisRequest(BaseModel):
+    lead_id: int
+    notes: str
+
+class MeetingAnalysisResponse(BaseModel):
+    summary: str
+    key_points: List[str]
+    action_items: List[str]
+    objections: List[str]
+    next_steps: str
+    deal_status: str
+    follow_up_email: str
+
+
+class LeadContextRequest(BaseModel):
+    lead_id: int
+
+
+class ObjectionPlaybookRequest(BaseModel):
+    lead_id: int
+    objection: str
+
+
+class DealStrategyResponse(BaseModel):
+    executive_summary: str
+    deal_narrative: str
+    leverage_points: List[str]
+    blind_spots: List[str]
+    likely_objections: List[str]
+    action_plan: List[str]
+
+
+class ObjectionPlaybookResponse(BaseModel):
+    objection_diagnosis: str
+    root_issue: str
+    rebuttal_strategy: str
+    proof_points: List[str]
+    response_script: str
+    follow_up_message: str
+
+
+class RevivalCampaignStep(BaseModel):
+    step: int
+    channel: str
+    timing: str
+    message: str
+    objective: str
+
+
+class RevivalCampaignResponse(BaseModel):
+    diagnosis: str
+    campaign_angle: str
+    sequence: List[RevivalCampaignStep]
+    do_not_do: List[str]
+
+
+class StakeholderMapResponse(BaseModel):
+    champion: str
+    decision_maker: str
+    economic_buyer: str
+    blockers: List[str]
+    missing_people: List[str]
+    access_strategy: List[str]
+
+
+class MeetingPrepResponse(BaseModel):
+    meeting_goal: str
+    agenda: List[str]
+    strategic_questions: List[str]
+    red_flags: List[str]
+    close_plan: List[str]

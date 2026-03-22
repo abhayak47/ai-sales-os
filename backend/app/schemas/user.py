@@ -17,6 +17,8 @@ class UserResponse(BaseModel):
     email: str
     plan: str
     ai_credits: int
+    subscription_status: Optional[str] = "inactive"
+    subscription_plan: Optional[str] = None
     is_onboarded: bool
     onboarding_step: int
     created_at: datetime

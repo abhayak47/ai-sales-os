@@ -30,7 +30,12 @@ class LeadResponse(BaseModel):
     score: Optional[float] = 0.0
     predicted_revenue: Optional[float] = 0.0
     follow_up_date: Optional[str] = None
+    health_score: Optional[float] = 50.0
+    health_status: Optional[str] = "Warm"
+    relationship_score: Optional[int] = 50
+    last_activity_at: Optional[datetime] = None
     created_at: datetime
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

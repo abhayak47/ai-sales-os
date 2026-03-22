@@ -20,15 +20,5 @@ class Lead(Base):
     health_status = Column(String, default="Warm")  # Cold, Warm, Hot
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-
-
-class Activity(Base):
-    __tablename__ = "activities"
-
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    lead_id = Column(Integer, ForeignKey("leads.id"), nullable=False)
-    type = Column(String, nullable=False)  # call, email, whatsapp, note, meeting, stage_change
-    title = Column(String, nullable=False)
-    description = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    last_activity_at = Column(DateTime, nullable=True)
+    relationship_score = Column(Integer, default=50)

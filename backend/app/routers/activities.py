@@ -1,11 +1,14 @@
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from typing import List
 from app.database import get_db
 from app.schemas.activity import ActivityCreate, ActivityResponse
-from app.models.lead import Activity, Lead
+from app.models.activity import Activity
+from app.models.lead import Lead
 from app.services.auth import get_current_user
+
 
 router = APIRouter(prefix="/activities", tags=["Activities"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
@@ -52,9 +55,23 @@ def create_activity(
         title=activity.title,
         description=activity.description
     )
+    
+
+
     db.add(new_activity)
+
+    # 🔥 NEW: update lead automatically
+    lead.last_activity_at = datetime.utcnow()
+
+    # simple score logic
+    if activity.type in ["call", "meeting"]:
+        lead.relationship_score = min((lead.relationship_score or 50) + 5, 100)
+    else:
+        lead.relationship_score = min((lead.relationship_score or 50) + 2, 100)
+
     db.commit()
     db.refresh(new_activity)
+
     return new_activity
 
 @router.delete("/{activity_id}")

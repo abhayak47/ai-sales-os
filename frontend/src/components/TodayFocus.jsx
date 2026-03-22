@@ -8,6 +8,14 @@ const PRIORITY_COLORS = {
   low: "border-blue-500/30 bg-blue-500/5",
 };
 
+const ICON_MAP = {
+  Fire: "!",
+  Wave: "+",
+  Chat: ">",
+  Plus: "+",
+  Brain: "*",
+};
+
 export default function TodayFocus() {
   const navigate = useNavigate();
   const [focus, setFocus] = useState(null);
@@ -62,7 +70,7 @@ export default function TodayFocus() {
             onClick={() => navigate(action.action_path)}
             className={`flex items-center gap-4 p-3 border rounded-lg cursor-pointer hover:opacity-80 transition ${PRIORITY_COLORS[action.priority]}`}
           >
-            <span className="text-2xl flex-shrink-0">{action.icon}</span>
+            <span className="text-2xl flex-shrink-0">{ICON_MAP[action.icon] || action.icon}</span>
             <div className="flex-1 min-w-0">
               <div className="text-sm font-medium truncate">{action.title}</div>
               <div className="text-white/40 text-xs truncate">{action.desc}</div>

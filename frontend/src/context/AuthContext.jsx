@@ -1,10 +1,12 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import API from "../api/axios";
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem("token"));
+  const [loading, setLoading] = useState(Boolean(localStorage.getItem("token")));
 
   useEffect(() => {
     if (token) {
@@ -12,6 +14,41 @@ export function AuthProvider({ children }) {
     } else {
       localStorage.removeItem("token");
     }
+  }, [token]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function hydrateUser() {
+      if (!token) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await API.get("/auth/me");
+        if (!cancelled) {
+          setUser(res.data);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setUser(null);
+          setToken(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    setLoading(Boolean(token));
+    hydrateUser();
+
+    return () => {
+      cancelled = true;
+    };
   }, [token]);
 
   const login = (userData, accessToken) => {
@@ -26,7 +63,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

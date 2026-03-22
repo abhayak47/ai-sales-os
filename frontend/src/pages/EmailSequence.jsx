@@ -72,7 +72,7 @@ export default function EmailSequence() {
             📧 AI Email Sequence Builder
           </h1>
           <p className="text-white/40 text-sm mb-6">
-            Generate a complete 7-day follow-up sequence for any lead. Uses 3 AI credits.
+            Generate a complete 7-day follow-up sequence for any lead. Uses 5 AI credits.
           </p>
 
           {/* Form */}
@@ -134,7 +134,7 @@ export default function EmailSequence() {
                 {loading ? (
                   <><span className="animate-spin">⚡</span> Generating 7-Day Sequence...</>
                 ) : (
-                  "Generate Email Sequence (3 credits)"
+                  "Generate Email Sequence (5 credits)"
                 )}
               </button>
             </form>

@@ -1,10 +1,16 @@
 import axios from "axios";
 
+const isLocalhost =
+  typeof window !== "undefined" &&
+  ["localhost", "127.0.0.1"].includes(window.location.hostname);
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  (isLocalhost ? "http://127.0.0.1:8000" : "https://ai-sales-os-backend.onrender.com");
+
 const API = axios.create({
-  baseURL: "https://ai-sales-os-backend.onrender.com",
+  baseURL: API_BASE_URL,
 });
-//https://ai-sales-os-backend.onrender.com
-//http://127.0.0.1:8000
 
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");

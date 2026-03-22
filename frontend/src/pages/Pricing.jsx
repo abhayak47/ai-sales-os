@@ -1,65 +1,84 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 import API from "../api/axios";
 
-const PLANS = [
-  {
-    id: "free",
-    name: "Free",
-    price: "₹0",
-    period: "forever",
-    credits: 10,
-    color: "border-white/10",
-    buttonStyle: "border border-white/20 text-white hover:bg-white/5",
-    features: [
-      "10 AI Credits",
-      "AI Follow-Up Generator",
-      "Lead Manager (up to 10 leads)",
-      "Basic Dashboard",
-    ],
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    price: "₹999",
-    period: "per month",
-    credits: 100,
-    color: "border-purple-500/50",
-    badge: "Most Popular",
-    buttonStyle: "bg-purple-600 text-white hover:bg-purple-500",
-    features: [
-      "100 AI Credits/month",
-      "AI Follow-Up Generator",
-      "AI Sales Brain Analysis",
-      "Unlimited Leads",
-      "Priority Support",
-    ],
-  },
-  {
-    id: "enterprise",
-    name: "Enterprise",
-    price: "₹2999",
-    period: "per month",
-    credits: 500,
-    color: "border-white/20",
-    buttonStyle: "bg-white text-black hover:bg-white/90",
-    features: [
-      "500 AI Credits/month",
-      "Everything in Pro",
-      "Team Access (coming soon)",
-      "API Access (coming soon)",
-      "Dedicated Support",
-    ],
-  },
-];
+const FREE_PLAN = {
+  id: "free",
+  name: "Free",
+  price: 0,
+  credits: 25,
+  description: "Start with 25 credits and test the command-center workflow.",
+  billing_type: "free",
+  buttonLabel: "Current Plan",
+  features: [
+    "25 launch credits",
+    "Lead manager and pipeline board",
+    "AI follow-up generation",
+    "AI deal command center",
+  ],
+};
+
+function formatPrice(price) {
+  return price ? `Rs ${(price / 100).toLocaleString()}` : "Rs 0";
+}
+
+function buildPaidFeatureList(plan) {
+  return [
+    ...(plan.features || []),
+    "Deal command center and meeting intel",
+    "LinkedIn lead capture extension",
+    "Full pipeline and activity tracking",
+  ];
+}
 
 export default function Pricing() {
   const navigate = useNavigate();
+  const [packs, setPacks] = useState([]);
+  const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(null);
+  const [plansLoading, setPlansLoading] = useState(true);
 
-  const handleUpgrade = async (planId) => {
-    if (planId === "free") return;
+  useEffect(() => {
+    fetchPlans();
+  }, []);
 
+  const fetchPlans = async () => {
+    try {
+      const res = await API.get("/payments/plans");
+      const hasGroupedPlans = res.data?.packs || res.data?.subscriptions;
+
+      const packSource = hasGroupedPlans
+        ? res.data.packs || {}
+        : Object.fromEntries(
+            Object.entries(res.data || {}).filter(([, plan]) => plan?.billing_type !== "subscription")
+          );
+
+      const subscriptionSource = hasGroupedPlans
+        ? res.data.subscriptions || {}
+        : Object.fromEntries(
+            Object.entries(res.data || {}).filter(([, plan]) => plan?.billing_type === "subscription")
+          );
+
+      const packList = Object.entries(packSource).map(([id, plan]) => ({
+        id,
+        ...plan,
+      }));
+      const subscriptionList = Object.entries(subscriptionSource).map(([id, plan]) => ({
+        id,
+        ...plan,
+      }));
+      setPacks(packList);
+      setSubscriptions(subscriptionList);
+    } catch (error) {
+      setPacks([]);
+      setSubscriptions([]);
+    } finally {
+      setPlansLoading(false);
+    }
+  };
+
+  const handlePackPurchase = async (planId) => {
     const token = localStorage.getItem("token");
     if (!token) {
       navigate("/signup");
@@ -69,152 +88,222 @@ export default function Pricing() {
     setLoading(planId);
     try {
       const res = await API.post("/payments/create-order", { plan: planId });
-      const { order_id, amount, currency, key_id } = res.data;
+      const { order_id, amount, currency, key_id, plan_name } = res.data;
 
       const options = {
         key: key_id,
-        amount: amount,
-        currency: currency,
+        amount,
+        currency,
         name: "AI Sales OS",
-        description: `${planId.charAt(0).toUpperCase() + planId.slice(1)} Plan`,
-        order_id: order_id,
+        description: plan_name,
+        order_id,
         handler: async function (response) {
-          try {
-            const verifyRes = await API.post("/payments/verify", {
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              plan: planId,
-            });
-            alert(`🎉 Payment successful! ${verifyRes.data.credits_added} credits added!`);
-            navigate("/dashboard");
-          } catch (err) {
-            alert("Payment verification failed. Contact support.");
-          }
+          const verifyRes = await API.post("/payments/verify", {
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+            plan: planId,
+          });
+          alert(`${verifyRes.data.plan_name} unlocked. ${verifyRes.data.credits_added} credits added.`);
+          navigate("/dashboard");
         },
-        prefill: { name: "", email: "" },
         theme: { color: "#7c3aed" },
       };
 
-      const rzp = new window.Razorpay(options);
-      rzp.open();
-    } catch (err) {
-      alert("Something went wrong. Please try again.");
+      new window.Razorpay(options).open();
+    } catch (error) {
+      alert("Could not start the purchase flow.");
     } finally {
       setLoading(null);
     }
   };
 
+  const handleSubscriptionPurchase = async (planId) => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/signup");
+      return;
+    }
+
+    setLoading(planId);
+    try {
+      const res = await API.post("/payments/create-subscription", { plan: planId });
+      const { subscription_id, amount, currency, key_id, plan_name } = res.data;
+
+      const options = {
+        key: key_id,
+        subscription_id,
+        name: "AI Sales OS",
+        description: `${plan_name} subscription`,
+        handler: async function (response) {
+          const verifyRes = await API.post("/payments/verify-subscription", {
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_subscription_id: response.razorpay_subscription_id,
+            razorpay_signature: response.razorpay_signature,
+            plan: planId,
+          });
+          alert(`${verifyRes.data.plan_name} activated. ${verifyRes.data.credits_added} credits added for this cycle.`);
+          navigate("/dashboard");
+        },
+        theme: { color: "#7c3aed" },
+        amount,
+        currency,
+      };
+
+      new window.Razorpay(options).open();
+    } catch (error) {
+      alert("Could not start the subscription flow.");
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const renderCard = (plan, isSubscription = false) => (
+    <div
+      key={plan.id}
+      className={`border rounded-2xl p-8 relative flex flex-col ${
+        plan.id.includes("pro") ? "border-purple-500/50" : "border-white/10"
+      }`}
+    >
+      {plan.id.includes("pro") && (
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-xs px-4 py-1 rounded-full">
+          {isSubscription ? "Best Recurring Offer" : "Best Launch Offer"}
+        </div>
+      )}
+
+      <div className="mb-6">
+        <h2 className="text-xl font-bold mb-2">{plan.name}</h2>
+        <div className="flex items-baseline gap-2">
+          <span className="text-4xl font-bold">{formatPrice(plan.price)}</span>
+          <span className="text-white/40 text-sm">
+            {isSubscription ? `per ${plan.interval}` : plan.billing_type === "free" ? "free" : "one-time"}
+          </span>
+        </div>
+        <div className="text-white/40 text-sm mt-1">{plan.credits} AI credits{isSubscription ? " per cycle" : ""}</div>
+        <div className="text-white/50 text-sm mt-3">{plan.description}</div>
+        {plan.cta && <div className="text-purple-300 text-sm mt-3">{plan.cta}</div>}
+      </div>
+
+      <div className="space-y-3 mb-8 flex-1">
+        {(plan.id === "free" ? plan.features : buildPaidFeatureList(plan)).map((feature) => (
+          <div key={feature} className="text-sm text-white/70">
+            {feature}
+          </div>
+        ))}
+      </div>
+
+      <button
+        onClick={() =>
+          plan.id === "free"
+            ? null
+            : isSubscription
+              ? handleSubscriptionPurchase(plan.id)
+              : handlePackPurchase(plan.id)
+        }
+        disabled={loading === plan.id || plan.id === "free"}
+        className={`w-full py-3 rounded-lg font-semibold transition disabled:opacity-50 ${
+          plan.id.includes("pro")
+            ? "bg-purple-600 text-white hover:bg-purple-500"
+            : plan.id === "free"
+              ? "border border-white/20 text-white"
+              : "bg-white text-black hover:bg-white/90"
+        }`}
+      >
+        {loading === plan.id
+          ? "Processing..."
+          : plan.id === "free"
+            ? plan.buttonLabel
+            : isSubscription
+              ? `Start ${plan.name}`
+              : `Buy ${plan.name}`}
+      </button>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Navbar */}
       <nav className="flex items-center justify-between px-8 py-5 border-b border-white/10">
-        <div
-          className="text-xl font-bold cursor-pointer"
-          onClick={() => navigate("/")}
+        <div className="text-xl font-bold cursor-pointer" onClick={() => navigate("/")}>
+          AI Sales OS
+        </div>
+        <button
+          onClick={() => navigate("/dashboard")}
+          className="px-4 py-2 text-sm text-white/70 hover:text-white transition"
         >
-          ⚡ AI Sales OS
-        </div>
-        <div className="flex gap-4">
-          <button
-            onClick={() => navigate("/dashboard")}
-            className="px-4 py-2 text-sm text-white/70 hover:text-white transition"
-          >
-            Dashboard
-          </button>
-        </div>
+          Dashboard
+        </button>
       </nav>
 
-      {/* Header */}
       <div className="text-center py-16 px-6">
-        <h1 className="text-4xl md:text-5xl font-bold mb-4">
-          Simple, Transparent Pricing
-        </h1>
-        <p className="text-white/40 text-lg max-w-xl mx-auto">
-          Start free. Upgrade when you're ready to close more deals.
+        <h1 className="text-4xl md:text-5xl font-bold mb-4">Pricing and Revenue Engine</h1>
+        <p className="text-white/40 text-lg max-w-2xl mx-auto">
+          Launch with one-time credit packs today, then grow into recurring AI revenue with monthly subscriptions.
         </p>
       </div>
 
-      {/* Plans */}
-      <div className="max-w-5xl mx-auto px-6 pb-20">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {PLANS.map((plan) => (
-            <div
-              key={plan.id}
-              className={`border ${plan.color} rounded-2xl p-8 relative flex flex-col`}
-            >
-              {plan.badge && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-xs px-4 py-1 rounded-full">
-                  {plan.badge}
-                </div>
-              )}
-
-              <div className="mb-6">
-                <h2 className="text-xl font-bold mb-2">{plan.name}</h2>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-bold">{plan.price}</span>
-                  <span className="text-white/40 text-sm">{plan.period}</span>
-                </div>
-                <div className="text-white/40 text-sm mt-1">
-                  {plan.credits} AI Credits
+      <div className="max-w-6xl mx-auto px-6 pb-20 space-y-16">
+        {plansLoading ? (
+          <div className="text-white/40">Loading pricing...</div>
+        ) : (
+          <>
+            <section>
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="text-2xl font-bold">Launch Packs</h2>
+                  <p className="text-white/40 text-sm mt-1">
+                    Simple one-time purchases for immediate monetization.
+                  </p>
                 </div>
               </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {[FREE_PLAN, ...packs].map((plan) => renderCard(plan, false))}
+              </div>
+            </section>
 
-              <ul className="space-y-3 mb-8 flex-1">
-                {plan.features.map((feature, i) => (
-                  <li key={i} className="flex items-center gap-2 text-sm text-white/70">
-                    <span className="text-green-400">✓</span>
-                    {feature}
-                  </li>
-                ))}
-              </ul>
+            <section>
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="text-2xl font-bold">Recurring Subscriptions</h2>
+                  <p className="text-white/40 text-sm mt-1">
+                    Monthly AI capacity for teams that want the platform running every day.
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {subscriptions.map((plan) => renderCard(plan, true))}
+              </div>
+            </section>
+          </>
+        )}
 
-              <button
-                onClick={() => handleUpgrade(plan.id)}
-                disabled={loading === plan.id || plan.id === "free"}
-                className={`w-full py-3 rounded-lg font-semibold transition disabled:opacity-50 ${plan.buttonStyle}`}
-              >
-                {loading === plan.id
-                  ? "Processing..."
-                  : plan.id === "free"
-                  ? "Current Plan"
-                  : `Upgrade to ${plan.name}`}
-              </button>
-            </div>
-          ))}
-        </div>
-
-        {/* FAQ */}
-        <div className="mt-20">
-          <h2 className="text-2xl font-bold text-center mb-10">
-            Frequently Asked Questions
-          </h2>
+        <section>
+          <h2 className="text-2xl font-bold text-center mb-10">How to sell this</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[
               {
-                q: "What are AI Credits?",
-                a: "Each AI action (follow-up generation, lead analysis) uses 1 credit.",
+                q: "What am I buying?",
+                a: "You are buying a sales execution engine: AI credits for follow-ups, deal analysis, meeting intelligence, and coaching.",
               },
               {
-                q: "Can I cancel anytime?",
-                a: "Yes! No contracts. Cancel anytime from your dashboard.",
+                q: "What is recurring here?",
+                a: "Subscriptions recharge AI capacity every billing cycle so reps can operate inside the platform continuously.",
               },
               {
-                q: "Is my data safe?",
-                a: "Yes. Your data is encrypted and never shared with third parties.",
+                q: "Why is this different from classic CRMs?",
+                a: "Because the product does not just store data. It prioritizes deals, drafts the move, and tells the rep exactly what to do next.",
               },
               {
-                q: "Do unused credits roll over?",
-                a: "Credits are valid for 30 days from purchase date.",
+                q: "What should I say on demos?",
+                a: "Pitch it as an AI deal command center for reps and founders who want execution, not admin software.",
               },
-            ].map((faq, i) => (
-              <div key={i} className="border border-white/10 rounded-xl p-6">
+            ].map((faq) => (
+              <div key={faq.q} className="border border-white/10 rounded-xl p-6">
                 <h3 className="font-semibold mb-2">{faq.q}</h3>
                 <p className="text-white/40 text-sm">{faq.a}</p>
               </div>
             ))}
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );
