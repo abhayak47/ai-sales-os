@@ -46,6 +46,96 @@
   --app-glow: rgba(56, 189, 248, 0.18);
 }
 
+/* Enterprise CRM (Zoho / HubSpot–style): light surfaces, blue accent */
+:root[data-theme="enterprise"] {
+  --app-bg: #f4f6f9;
+  --app-bg-alt: #eef1f6;
+  --app-panel: #ffffff;
+  --app-panel-strong: #f8fafc;
+  --app-panel-solid: rgba(255, 255, 255, 0.98);
+  --app-text: #0f172a;
+  --app-text-soft: #334155;
+  --app-text-muted: #64748b;
+  --app-border: #e2e8f0;
+  --app-accent: #0b57d0;
+  --app-accent-strong: #0842a0;
+  --app-glow: rgba(11, 87, 208, 0.12);
+}
+
+[data-theme="enterprise"] body::before {
+  opacity: 0.12;
+}
+
+[data-theme="enterprise"] .bg-gradient-to-br {
+  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.88), rgba(241, 245, 249, 0.75)) !important;
+}
+
+[data-theme="enterprise"] input,
+[data-theme="enterprise"] textarea,
+[data-theme="enterprise"] select {
+  color: #0f172a;
+}
+
+[data-theme="enterprise"] input::placeholder,
+[data-theme="enterprise"] textarea::placeholder {
+  color: rgba(15, 23, 42, 0.38);
+}
+
+[data-theme="enterprise"] .text-black,
+[data-theme="enterprise"] .bg-white.text-black {
+  color: #0f172a !important;
+}
+
+[data-theme="enterprise"] .bg-white {
+  background-color: #ffffff !important;
+}
+
+/* CRM utility surfaces */
+.crm-table-wrap {
+  border: 1px solid var(--app-border);
+  background: var(--app-panel);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.crm-table-header {
+  display: none;
+  grid-template-columns: 2fr 1.4fr 1fr 1fr 1fr auto;
+  gap: 1rem;
+  padding: 0.65rem 1rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--app-text-muted);
+  background: var(--app-bg-alt);
+  border-bottom: 1px solid var(--app-border);
+}
+
+@media (min-width: 1024px) {
+  .crm-table-header {
+    display: grid;
+  }
+}
+
+.crm-toolbar {
+  border-bottom: 1px solid var(--app-border);
+  background: var(--app-panel);
+}
+
+.crm-filter-panel {
+  border: 1px solid var(--app-border);
+  background: var(--app-panel);
+  border-radius: 0.5rem;
+}
+
+.crm-record-nav button.active {
+  background: color-mix(in srgb, var(--app-accent) 10%, transparent);
+  color: var(--app-accent);
+  font-weight: 600;
+  border-left: 3px solid var(--app-accent);
+}
+
 html,
 body,
 #root {

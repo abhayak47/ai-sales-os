@@ -5,6 +5,7 @@ import API from "../api/axios";
 import SavedViewsPanel from "../components/SavedViewsPanel";
 import Sidebar from "../components/Sidebar";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 
 const STATUS_OPTIONS = ["All", "New", "Contacted", "Interested", "Converted", "Lost"];
 const SEGMENT_OPTIONS = ["All", "general", "inbound", "outbound", "partner", "expansion"];
@@ -14,16 +15,27 @@ const SORT_OPTIONS = [
   { value: "score:desc", label: "Highest score" },
   { value: "revenue:desc", label: "Highest revenue" },
   { value: "last_activity_at:desc", label: "Most recent activity" },
-  { value: "name:asc", label: "Name A-Z" },
+  { value: "name:asc", label: "Name A–Z" },
 ];
 
-const STATUS_COLORS = {
-  New: "bg-blue-500/10 text-blue-300 border-blue-500/20",
-  Contacted: "bg-amber-500/10 text-amber-300 border-amber-500/20",
-  Interested: "bg-fuchsia-500/10 text-fuchsia-300 border-fuchsia-500/20",
-  Converted: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
-  Lost: "bg-red-500/10 text-red-300 border-red-500/20",
-};
+function statusBadgeClass(status, isEnterprise) {
+  const map = isEnterprise
+    ? {
+        New: "bg-blue-50 text-blue-800 border-blue-200",
+        Contacted: "bg-amber-50 text-amber-900 border-amber-200",
+        Interested: "bg-violet-50 text-violet-800 border-violet-200",
+        Converted: "bg-emerald-50 text-emerald-800 border-emerald-200",
+        Lost: "bg-red-50 text-red-800 border-red-200",
+      }
+    : {
+        New: "bg-blue-500/10 text-blue-300 border-blue-500/20",
+        Contacted: "bg-amber-500/10 text-amber-300 border-amber-500/20",
+        Interested: "bg-fuchsia-500/10 text-fuchsia-300 border-fuchsia-500/20",
+        Converted: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
+        Lost: "bg-red-500/10 text-red-300 border-red-500/20",
+      };
+  return map[status] || map.New;
+}
 
 const EMPTY_FORM = {
   name: "",
@@ -39,6 +51,8 @@ const EMPTY_FORM = {
 export default function Leads() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { theme } = useTheme();
+  const isEnterprise = theme === "enterprise";
   const [searchParams, setSearchParams] = useSearchParams();
   const [leads, setLeads] = useState([]);
   const [summary, setSummary] = useState(null);
@@ -165,381 +179,433 @@ export default function Leads() {
   };
 
   const totalPages = meta?.total_pages || 1;
-  const visibleSegments = [...new Set(leads.map((lead) => lead.segment || "general"))];
-  const visibleTaggedLeads = leads.filter((lead) => (lead.tags || []).length > 0).length;
+  const pageNum = meta?.page || 1;
+  const totalRec = meta?.total ?? 0;
+
+  const muted = isEnterprise ? "text-slate-500" : "text-white/40";
+  const sub = isEnterprise ? "text-slate-600" : "text-white/60";
+  const rowHover = isEnterprise ? "hover:bg-slate-50/90" : "hover:bg-white/[0.03]";
+  const border = isEnterprise ? "border-slate-200" : "border-white/10";
+  const cardBg = isEnterprise ? "bg-white border border-slate-200" : "border border-white/10 bg-white/[0.02]";
+
+  const primaryBtn = isEnterprise
+    ? "px-4 py-2.5 rounded-lg text-sm font-medium bg-[#0b57d0] text-white hover:bg-[#0948b0] transition shadow-sm"
+    : "px-4 py-2.5 bg-white text-black text-sm font-semibold rounded-xl hover:bg-white/90 transition";
+
+  const secondaryBtn = isEnterprise
+    ? "px-4 py-2.5 rounded-lg text-sm font-medium border border-slate-300 text-slate-700 hover:bg-slate-50 transition"
+    : "px-4 py-2.5 border border-white/10 rounded-xl text-sm text-white/70 hover:text-white transition";
 
   return (
     <div className="min-h-screen bg-black text-white flex">
       <Sidebar />
 
-      <div className="flex-1 p-4 md:p-8 overflow-y-auto mt-16 md:mt-0">
-        <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-5 mb-6">
+      <div className="flex-1 flex flex-col mt-16 md:mt-0 min-h-screen md:min-h-0 md:h-screen overflow-hidden">
+        <header
+          className={`shrink-0 px-4 py-3 md:px-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b ${
+            isEnterprise ? "border-slate-200 bg-white" : "border-white/10 bg-[var(--app-panel-solid)]"
+          }`}
+        >
           <div>
-            <div className="text-xs uppercase tracking-[0.2em] text-white/35 mb-2">Lead Workspace</div>
-            <h1 className="text-2xl md:text-3xl font-bold">Built for thousands of leads, not a crowded spreadsheet</h1>
-            <p className="text-white/45 text-sm mt-2 max-w-3xl">
-              Search fast, filter by stage, and stay focused on the leads that actually need action now.
+            <div className={`text-xs uppercase tracking-[0.12em] ${muted}`}>Module</div>
+            <h1 className={`text-lg font-semibold ${isEnterprise ? "text-slate-900" : ""}`}>Leads</h1>
+            <p className={`text-sm mt-0.5 ${muted}`}>
+              {user?.organization_name || "Workspace"} · {user?.role || "owner"}
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              onClick={() => navigate("/pipeline")}
-              className="px-4 py-3 border border-white/10 rounded-xl text-sm text-white/70 hover:text-white transition"
-            >
-              Open pipeline
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => navigate("/pipeline")} className={secondaryBtn}>
+              Pipeline board
             </button>
-            <button
-              onClick={openCreateForm}
-              className="px-4 py-3 bg-white text-black text-sm font-semibold rounded-xl hover:bg-white/90 transition"
-            >
-              Add lead
+            <button type="button" onClick={openCreateForm} className={primaryBtn}>
+              Create lead
             </button>
           </div>
-        </div>
+        </header>
 
-        <div className="grid grid-cols-2 xl:grid-cols-6 gap-3 mb-6">
+        <div
+          className={`shrink-0 px-4 py-2 md:px-6 flex flex-wrap gap-x-6 gap-y-1 text-sm border-b ${
+            isEnterprise ? "border-slate-200 bg-slate-50 text-slate-700" : "border-white/10 text-white/55"
+          }`}
+        >
           {[
-            ["Total", summary?.total || 0],
-            ["Needs attention", summary?.needs_attention || 0],
-            ["New", summary?.new || 0],
-            ["Interested", summary?.interested || 0],
-            ["Converted", summary?.converted || 0],
-            ["Lost", summary?.lost || 0],
+            ["Total", summary?.total ?? 0],
+            ["Attention", summary?.needs_attention ?? 0],
+            ["New", summary?.new ?? 0],
+            ["Interested", summary?.interested ?? 0],
+            ["Won", summary?.converted ?? 0],
+            ["Lost", summary?.lost ?? 0],
           ].map(([label, value]) => (
-            <div key={label} className="border border-white/10 rounded-2xl p-4 bg-white/[0.02]">
-              <div className="text-xs text-white/35 mb-2">{label}</div>
-              <div className="text-2xl font-bold">{value}</div>
-            </div>
+            <span key={label}>
+              <span className={muted}>{label}:</span>{" "}
+              <span className={isEnterprise ? "font-semibold text-slate-900" : "font-medium text-white"}>{value}</span>
+            </span>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr_0.8fr] gap-3 mb-6">
-          <div className="border border-white/10 rounded-2xl p-5 bg-white/[0.02]">
-            <div className="text-xs uppercase tracking-[0.2em] text-white/35 mb-2">Workspace Scope</div>
-            <div className="text-lg font-semibold">{user?.organization_name || "Personal workspace"}</div>
-            <div className="text-sm text-white/45 mt-2">
-              {user?.role || "owner"} role · leads created here are scoped to this workspace foundation.
-            </div>
-          </div>
-          <div className="border border-white/10 rounded-2xl p-5 bg-white/[0.02]">
-            <div className="text-xs text-white/35 mb-2">Visible segments</div>
-            <div className="text-3xl font-bold">{visibleSegments.length}</div>
-            <div className="text-xs text-white/35 mt-2">
-              {visibleSegments.slice(0, 3).join(", ") || "No segmented leads yet"}
-            </div>
-          </div>
-          <div className="border border-white/10 rounded-2xl p-5 bg-white/[0.02]">
-            <div className="text-xs text-white/35 mb-2">Tagged records</div>
-            <div className="text-3xl font-bold">{visibleTaggedLeads}</div>
-            <div className="text-xs text-white/35 mt-2">On this page of results</div>
-          </div>
-        </div>
+        <div className="flex flex-1 flex-col lg:flex-row min-h-0 overflow-hidden">
+          <aside
+            className={`w-full lg:w-64 xl:w-72 shrink-0 overflow-y-auto border-b lg:border-b-0 lg:border-r p-4 space-y-4 ${
+              isEnterprise ? "border-slate-200 bg-slate-50/80" : "border-white/10 bg-black/20"
+            }`}
+          >
+            <SavedViewsPanel compact />
+            <div className={`crm-filter-panel p-4 space-y-4 ${!isEnterprise ? "bg-white/[0.02] border-white/10" : ""}`}>
+              <div className={`text-xs font-semibold uppercase tracking-wide ${muted}`}>Filter by</div>
 
-        <div className="mb-6">
-          <SavedViewsPanel compact />
-        </div>
-
-        <div className="border border-white/10 rounded-2xl p-4 md:p-5 mb-6 bg-white/[0.02]">
-          <div className="flex flex-col xl:flex-row gap-3">
-            <form onSubmit={handleSearchSubmit} className="flex-1">
-              <input
-                value={query.search}
-                onChange={(e) => setQuery((current) => ({ ...current, search: e.target.value }))}
-                placeholder="Search by name, company, notes, email, or phone"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/25 focus:outline-none"
-              />
-            </form>
-            <select
-              value={query.status}
-              onChange={(e) =>
-                setQuery((current) => ({
-                  ...current,
-                  status: e.target.value,
-                  page: 1,
-                  view: "",
-                }))
-              }
-              className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none"
-            >
-              {STATUS_OPTIONS.map((status) => (
-                <option key={status} value={status} className="bg-black">
-                  {status === "All" ? "All stages" : status}
-                </option>
-              ))}
-            </select>
-            <select
-              value={query.segment}
-              onChange={(e) =>
-                setQuery((current) => ({
-                  ...current,
-                  segment: e.target.value,
-                  page: 1,
-                  view: "",
-                }))
-              }
-              className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none"
-            >
-              {SEGMENT_OPTIONS.map((segment) => (
-                <option key={segment} value={segment} className="bg-black">
-                  {segment === "All" ? "All segments" : `${segment.charAt(0).toUpperCase()}${segment.slice(1)}`}
-                </option>
-              ))}
-            </select>
-            <input
-              value={query.tag}
-              onChange={(e) => setQuery((current) => ({ ...current, tag: e.target.value, page: 1, view: "" }))}
-              placeholder="Filter by tag"
-              className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/25 focus:outline-none"
-            />
-            <select
-              value={query.sort}
-              onChange={(e) => setQuery((current) => ({ ...current, sort: e.target.value, page: 1 }))}
-              className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none"
-            >
-              {SORT_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value} className="bg-black">
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <select
-              value={query.pageSize}
-              onChange={(e) => setQuery((current) => ({ ...current, pageSize: Number(e.target.value), page: 1 }))}
-              className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none"
-            >
-              {[25, 50, 100].map((size) => (
-                <option key={size} value={size} className="bg-black">
-                  {size} per page
-                </option>
-              ))}
-            </select>
-            {query.view && (
-              <button
-                onClick={() => {
-                  setQuery((current) => ({ ...current, view: "", page: 1 }));
-                  setSearchParams({});
-                }}
-                className="px-4 py-3 border border-white/10 rounded-xl text-sm text-white/60 hover:text-white transition"
-              >
-                Clear saved view
-              </button>
-            )}
-          </div>
-        </div>
-
-        {showForm && (
-          <div className="border border-white/10 rounded-2xl p-5 mb-6">
-            <h2 className="text-base font-semibold mb-4">{editLead ? "Edit lead" : "Add new lead"}</h2>
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[
-                { label: "Name *", name: "name", type: "text", placeholder: "John Doe", required: true },
-                { label: "Company", name: "company", type: "text", placeholder: "Acme Corp" },
-                { label: "Email", name: "email", type: "email", placeholder: "john@example.com" },
-                { label: "Phone", name: "phone", type: "text", placeholder: "+91 98765 43210" },
-              ].map((field) => (
-                <div key={field.name}>
-                  <label className="text-sm text-white/60 mb-1 block">{field.label}</label>
-                  <input
-                    type={field.type}
-                    name={field.name}
-                    value={form[field.name]}
-                    onChange={(e) => setForm((current) => ({ ...current, [field.name]: e.target.value }))}
-                    required={field.required}
-                    placeholder={field.placeholder}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none"
-                  />
-                </div>
-              ))}
               <div>
-                <label className="text-sm text-white/60 mb-1 block">Status</label>
+                <label className={`block text-xs mb-1 ${muted}`}>Stage</label>
                 <select
-                  name="status"
-                  value={form.status}
-                  onChange={(e) => setForm((current) => ({ ...current, status: e.target.value }))}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none"
+                  value={query.status}
+                  onChange={(e) =>
+                    setQuery((current) => ({
+                      ...current,
+                      status: e.target.value,
+                      page: 1,
+                      view: "",
+                    }))
+                  }
+                  className="input-surface text-sm py-2"
                 >
-                  {STATUS_OPTIONS.filter((item) => item !== "All").map((status) => (
-                    <option key={status} value={status} className="bg-black">
-                      {status}
+                  {STATUS_OPTIONS.map((status) => (
+                    <option key={status} value={status}>
+                      {status === "All" ? "All stages" : status}
                     </option>
                   ))}
                 </select>
               </div>
+
               <div>
-                <label className="text-sm text-white/60 mb-1 block">Segment</label>
+                <label className={`block text-xs mb-1 ${muted}`}>Segment</label>
                 <select
-                  name="segment"
-                  value={form.segment}
-                  onChange={(e) => setForm((current) => ({ ...current, segment: e.target.value }))}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none"
+                  value={query.segment}
+                  onChange={(e) =>
+                    setQuery((current) => ({
+                      ...current,
+                      segment: e.target.value,
+                      page: 1,
+                      view: "",
+                    }))
+                  }
+                  className="input-surface text-sm py-2"
                 >
-                  {SEGMENT_OPTIONS.filter((item) => item !== "All").map((segment) => (
-                    <option key={segment} value={segment} className="bg-black">
-                      {segment.charAt(0).toUpperCase()}
-                      {segment.slice(1)}
+                  {SEGMENT_OPTIONS.map((segment) => (
+                    <option key={segment} value={segment}>
+                      {segment === "All" ? "All segments" : `${segment.charAt(0).toUpperCase()}${segment.slice(1)}`}
                     </option>
                   ))}
                 </select>
               </div>
+
               <div>
-                <label className="text-sm text-white/60 mb-1 block">Notes</label>
+                <label className={`block text-xs mb-1 ${muted}`}>Tag contains</label>
                 <input
-                  type="text"
-                  name="notes"
-                  value={form.notes}
-                  onChange={(e) => setForm((current) => ({ ...current, notes: e.target.value }))}
-                  placeholder="Any notes..."
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none"
+                  value={query.tag}
+                  onChange={(e) => setQuery((current) => ({ ...current, tag: e.target.value, page: 1, view: "" }))}
+                  placeholder="e.g. enterprise"
+                  className="input-surface text-sm py-2"
                 />
               </div>
-              <div className="md:col-span-2">
-                <label className="text-sm text-white/60 mb-1 block">Tags</label>
-                <input
-                  type="text"
-                  name="tagsText"
-                  value={form.tagsText}
-                  onChange={(e) => setForm((current) => ({ ...current, tagsText: e.target.value }))}
-                  placeholder="enterprise, q2, india-market"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none"
-                />
+
+              <div>
+                <label className={`block text-xs mb-1 ${muted}`}>Sort</label>
+                <select
+                  value={query.sort}
+                  onChange={(e) => setQuery((current) => ({ ...current, sort: e.target.value, page: 1 }))}
+                  className="input-surface text-sm py-2"
+                >
+                  {SORT_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
-              <div className="md:col-span-2 flex gap-3">
-                <button type="submit" className="px-6 py-3 bg-white text-black font-semibold rounded-xl hover:bg-white/90 transition">
-                  {editLead ? "Update lead" : "Add lead"}
-                </button>
+
+              <div>
+                <label className={`block text-xs mb-1 ${muted}`}>Rows per page</label>
+                <select
+                  value={query.pageSize}
+                  onChange={(e) => setQuery((current) => ({ ...current, pageSize: Number(e.target.value), page: 1 }))}
+                  className="input-surface text-sm py-2"
+                >
+                  {[25, 50, 100].map((size) => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {query.view && (
                 <button
                   type="button"
                   onClick={() => {
-                    setShowForm(false);
-                    setEditLead(null);
-                    setForm(EMPTY_FORM);
+                    setQuery((current) => ({ ...current, view: "", page: 1 }));
+                    setSearchParams({});
                   }}
-                  className="px-6 py-3 border border-white/10 rounded-xl text-white/50 hover:text-white transition"
+                  className={`w-full py-2 text-sm rounded-lg border ${isEnterprise ? "border-slate-300 text-slate-700 hover:bg-white" : "border-white/15 text-white/70 hover:bg-white/5"}`}
                 >
-                  Cancel
+                  Clear saved view
+                </button>
+              )}
+            </div>
+          </aside>
+
+          <main className="flex-1 overflow-y-auto p-4 md:p-6 min-h-0">
+            <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-2 mb-4">
+              <input
+                value={query.search}
+                onChange={(e) => setQuery((current) => ({ ...current, search: e.target.value }))}
+                placeholder="Search name, company, email, phone, notes…"
+                className="input-surface flex-1 text-sm"
+              />
+              <button type="submit" className={`${primaryBtn} whitespace-nowrap`}>
+                Search
+              </button>
+            </form>
+
+            {showForm && (
+              <div className={`rounded-xl p-5 mb-6 ${cardBg}`}>
+                <h2 className={`text-base font-semibold mb-4 ${isEnterprise ? "text-slate-900" : ""}`}>
+                  {editLead ? "Edit lead" : "New lead"}
+                </h2>
+                <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[
+                    { label: "Name *", name: "name", type: "text", placeholder: "Full name", required: true },
+                    { label: "Company", name: "company", type: "text", placeholder: "Company" },
+                    { label: "Email", name: "email", type: "email", placeholder: "email@company.com" },
+                    { label: "Phone", name: "phone", type: "text", placeholder: "+1 …" },
+                  ].map((field) => (
+                    <div key={field.name}>
+                      <label className={`text-sm mb-1 block ${muted}`}>{field.label}</label>
+                      <input
+                        type={field.type}
+                        name={field.name}
+                        value={form[field.name]}
+                        onChange={(e) => setForm((current) => ({ ...current, [field.name]: e.target.value }))}
+                        required={field.required}
+                        placeholder={field.placeholder}
+                        className="input-surface"
+                      />
+                    </div>
+                  ))}
+                  <div>
+                    <label className={`text-sm mb-1 block ${muted}`}>Stage</label>
+                    <select
+                      name="status"
+                      value={form.status}
+                      onChange={(e) => setForm((current) => ({ ...current, status: e.target.value }))}
+                      className="input-surface"
+                    >
+                      {STATUS_OPTIONS.filter((item) => item !== "All").map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={`text-sm mb-1 block ${muted}`}>Segment</label>
+                    <select
+                      name="segment"
+                      value={form.segment}
+                      onChange={(e) => setForm((current) => ({ ...current, segment: e.target.value }))}
+                      className="input-surface"
+                    >
+                      {SEGMENT_OPTIONS.filter((item) => item !== "All").map((segment) => (
+                        <option key={segment} value={segment}>
+                          {segment.charAt(0).toUpperCase()}
+                          {segment.slice(1)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className={`text-sm mb-1 block ${muted}`}>Notes</label>
+                    <input
+                      type="text"
+                      name="notes"
+                      value={form.notes}
+                      onChange={(e) => setForm((current) => ({ ...current, notes: e.target.value }))}
+                      placeholder="Internal notes"
+                      className="input-surface"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className={`text-sm mb-1 block ${muted}`}>Tags</label>
+                    <input
+                      type="text"
+                      name="tagsText"
+                      value={form.tagsText}
+                      onChange={(e) => setForm((current) => ({ ...current, tagsText: e.target.value }))}
+                      placeholder="Comma-separated"
+                      className="input-surface"
+                    />
+                  </div>
+                  <div className="md:col-span-2 flex gap-3">
+                    <button type="submit" className="button-primary">
+                      {editLead ? "Save changes" : "Create lead"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowForm(false);
+                        setEditLead(null);
+                        setForm(EMPTY_FORM);
+                      }}
+                      className="button-secondary"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            <div className="crm-table-wrap">
+              <div className="crm-table-header">
+                <div>Lead</div>
+                <div>Company & contact</div>
+                <div>Stage</div>
+                <div>Health</div>
+                <div>Value</div>
+                <div className="text-right">Actions</div>
+              </div>
+
+              {loading ? (
+                <div className={`text-center py-16 text-sm ${muted}`}>Loading records…</div>
+              ) : leads.length === 0 ? (
+                <div className="text-center py-16 px-6">
+                  <div className={`font-medium mb-1 ${isEnterprise ? "text-slate-800" : ""}`}>No records in this view</div>
+                  <div className={`text-sm ${muted}`}>Adjust filters or create a new lead.</div>
+                </div>
+              ) : (
+                <div>
+                  {leads.map((lead) => (
+                    <div
+                      key={lead.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => navigate(`/leads/${lead.id}`)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          navigate(`/leads/${lead.id}`);
+                        }
+                      }}
+                      className={`grid grid-cols-1 lg:grid-cols-[2fr_1.4fr_1fr_1fr_1fr_auto] gap-4 px-4 py-3 border-b ${border} ${rowHover} transition cursor-pointer text-left`}
+                    >
+                      <div>
+                        <div className={`font-medium ${isEnterprise ? "text-slate-900" : ""}`}>{lead.name}</div>
+                        <div className={`text-sm mt-1 line-clamp-2 ${muted}`}>{lead.notes || "—"}</div>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <span
+                            className={`text-[11px] px-2 py-0.5 rounded border ${
+                              isEnterprise ? "border-slate-200 bg-slate-100 text-slate-700" : "border-cyan-500/20 bg-cyan-500/10 text-cyan-200/90"
+                            }`}
+                          >
+                            {lead.segment || "general"}
+                          </span>
+                          {(lead.tags || []).slice(0, 3).map((tag) => (
+                            <span
+                              key={`${lead.id}-${tag}`}
+                              className={`text-[11px] px-2 py-0.5 rounded border ${
+                                isEnterprise ? "border-slate-200 text-slate-600" : "border-white/10 bg-white/[0.04] text-white/55"
+                              }`}
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className={`text-sm space-y-0.5 ${sub}`}>
+                        <div>{lead.company || "—"}</div>
+                        <div>{lead.email || "—"}</div>
+                        <div>{lead.phone || "—"}</div>
+                      </div>
+                      <div>
+                        <span className={`text-xs px-2.5 py-1 rounded border ${statusBadgeClass(lead.status, isEnterprise)}`}>
+                          {lead.status}
+                        </span>
+                        {lead.follow_up_date && (
+                          <div className={`text-xs mt-2 ${muted}`}>Follow-up: {lead.follow_up_date}</div>
+                        )}
+                      </div>
+                      <div>
+                        <div className={`text-sm font-medium ${isEnterprise ? "text-slate-800" : ""}`}>{lead.health_status || "Warm"}</div>
+                        <div className={`text-xs mt-0.5 ${muted}`}>
+                          {Math.round(lead.health_score || 50)} · Rel. {lead.relationship_score ?? "—"}
+                        </div>
+                      </div>
+                      <div>
+                        <div className={`text-sm font-medium ${isEnterprise ? "text-slate-800" : ""}`}>
+                          {lead.predicted_revenue ? `₹ ${Number(lead.predicted_revenue).toLocaleString()}` : "—"}
+                        </div>
+                        <div className={`text-xs ${muted}`}>{lead.score ? `Score ${lead.score}` : "No score"}</div>
+                      </div>
+                      <div className="flex lg:flex-col gap-2 justify-end lg:items-end" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={(e) => handleEdit(e, lead)}
+                          className={`text-xs px-3 py-1.5 rounded-md border ${
+                            isEnterprise ? "border-slate-300 text-slate-700 hover:bg-slate-50" : "border-white/10 text-white/55 hover:text-white"
+                          }`}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleDelete(e, lead.id)}
+                          className={`text-xs px-3 py-1.5 rounded-md border ${
+                            isEnterprise ? "border-red-200 text-red-700 hover:bg-red-50" : "border-red-500/20 text-red-300/80"
+                          }`}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-4 text-sm ${muted}`}>
+              <div>
+                Total records: <span className={isEnterprise ? "text-slate-800 font-medium" : "text-white/70"}>{totalRec}</span>
+                {leads.length > 0 && totalRec > 0 && (
+                  <span className="ml-2">
+                    Showing {(pageNum - 1) * query.pageSize + 1}–{Math.min(pageNum * query.pageSize, totalRec)} of {totalRec}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={(meta?.page || 1) <= 1}
+                  onClick={() => setQuery((current) => ({ ...current, page: current.page - 1 }))}
+                  className={`px-3 py-1.5 rounded-lg text-sm border disabled:opacity-40 ${
+                    isEnterprise ? "border-slate-300 text-slate-700" : "border-white/10 text-white/60"
+                  }`}
+                >
+                  Previous
+                </button>
+                <span className="px-2">
+                  Page {meta?.page || 1} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={(meta?.page || 1) >= totalPages}
+                  onClick={() => setQuery((current) => ({ ...current, page: current.page + 1 }))}
+                  className={`px-3 py-1.5 rounded-lg text-sm border disabled:opacity-40 ${
+                    isEnterprise ? "border-slate-300 text-slate-700" : "border-white/10 text-white/60"
+                  }`}
+                >
+                  Next
                 </button>
               </div>
-            </form>
-          </div>
-        )}
-
-        <div className="border border-white/10 rounded-2xl overflow-hidden">
-          <div className="hidden lg:grid lg:grid-cols-[2fr_1.4fr_1fr_1fr_1fr_auto] gap-4 px-5 py-4 text-xs uppercase tracking-[0.15em] text-white/35 border-b border-white/10">
-            <div>Lead</div>
-            <div>Company and contact</div>
-            <div>Stage</div>
-            <div>Health</div>
-            <div>Revenue</div>
-            <div>Actions</div>
-          </div>
-
-          {loading ? (
-            <div className="text-white/35 text-sm text-center py-16">Loading lead workspace...</div>
-          ) : leads.length === 0 ? (
-            <div className="text-center py-16 px-6">
-              <div className="text-lg font-semibold mb-2">No leads match this view</div>
-              <div className="text-white/40 text-sm">Try a broader search or switch to another stage filter.</div>
             </div>
-          ) : (
-            <div>
-              {leads.map((lead) => (
-                <div
-                  key={lead.id}
-                  onClick={() => navigate(`/leads/${lead.id}`)}
-                  className="grid grid-cols-1 lg:grid-cols-[2fr_1.4fr_1fr_1fr_1fr_auto] gap-4 px-5 py-4 border-b border-white/10 hover:bg-white/[0.03] transition cursor-pointer"
-                >
-                  <div>
-                    <div className="font-medium">{lead.name}</div>
-                    <div className="text-sm text-white/40 mt-1 line-clamp-2">{lead.notes || "No notes yet"}</div>
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      <span className="text-[11px] uppercase tracking-[0.18em] px-2.5 py-1 rounded-full border border-cyan-500/20 bg-cyan-500/10 text-cyan-200/90">
-                        {lead.segment || "general"}
-                      </span>
-                      {(lead.tags || []).slice(0, 3).map((tag) => (
-                        <span
-                          key={`${lead.id}-${tag}`}
-                          className="text-[11px] px-2.5 py-1 rounded-full border border-white/10 bg-white/[0.04] text-white/55"
-                        >
-                          #{tag}
-                        </span>
-                      ))}
-                      {(lead.tags || []).length > 3 && (
-                        <span className="text-[11px] px-2.5 py-1 rounded-full border border-white/10 bg-white/[0.04] text-white/45">
-                          +{lead.tags.length - 3}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-sm text-white/60 space-y-1">
-                    <div>{lead.company || "No company"}</div>
-                    <div>{lead.email || "No email"}</div>
-                    <div>{lead.phone || "No phone"}</div>
-                  </div>
-                  <div>
-                    <span className={`text-xs px-3 py-1.5 rounded-full border ${STATUS_COLORS[lead.status] || STATUS_COLORS.New}`}>
-                      {lead.status}
-                    </span>
-                    {lead.follow_up_date && (
-                      <div className="text-xs text-white/35 mt-2">Next touch: {lead.follow_up_date}</div>
-                    )}
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium">{lead.health_status || "Warm"}</div>
-                    <div className="text-xs text-white/40 mt-1">
-                      Health {Math.round(lead.health_score || 50)} · Relationship {lead.relationship_score || 50}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium">
-                      {lead.predicted_revenue ? `Rs ${Number(lead.predicted_revenue).toLocaleString()}` : "Not scored"}
-                    </div>
-                    <div className="text-xs text-white/40 mt-1">
-                      {lead.score ? `Score ${lead.score}/100` : "AI score pending"}
-                    </div>
-                  </div>
-                  <div className="flex lg:flex-col gap-2 justify-start">
-                    <button
-                      onClick={(e) => handleEdit(e, lead)}
-                      className="text-xs px-3 py-2 border border-white/10 rounded-lg text-white/55 hover:text-white transition"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={(e) => handleDelete(e, lead.id)}
-                      className="text-xs px-3 py-2 border border-red-500/20 rounded-lg text-red-300/80 hover:text-red-200 transition"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mt-5">
-          <div className="text-sm text-white/40">
-            Showing {leads.length} of {meta?.total || 0} leads
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              disabled={(meta?.page || 1) <= 1}
-              onClick={() => setQuery((current) => ({ ...current, page: current.page - 1 }))}
-              className="px-4 py-2 border border-white/10 rounded-xl text-sm text-white/60 disabled:opacity-30"
-            >
-              Previous
-            </button>
-            <div className="text-sm text-white/55 px-2">
-              Page {meta?.page || 1} of {totalPages}
-            </div>
-            <button
-              disabled={(meta?.page || 1) >= totalPages}
-              onClick={() => setQuery((current) => ({ ...current, page: current.page + 1 }))}
-              className="px-4 py-2 border border-white/10 rounded-xl text-sm text-white/60 disabled:opacity-30"
-            >
-              Next
-            </button>
-          </div>
+          </main>
         </div>
       </div>
     </div>

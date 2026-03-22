@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import API from "../api/axios";
 import Sidebar from "../components/Sidebar";
+import { useTheme } from "../context/ThemeContext";
 
 const EMPTY_FORM = {
   name: "",
@@ -15,6 +16,8 @@ const EMPTY_FORM = {
 };
 
 export default function Contacts() {
+  const { theme } = useTheme();
+  const isEnterprise = theme === "enterprise";
   const [contacts, setContacts] = useState([]);
   const [query, setQuery] = useState({ search: "", segment: "All", tag: "" });
   const [form, setForm] = useState(EMPTY_FORM);
@@ -59,22 +62,40 @@ export default function Contacts() {
     }
   };
 
+  const primaryBtn = isEnterprise
+    ? "px-4 py-2.5 rounded-lg text-sm font-medium bg-[#0b57d0] text-white hover:bg-[#0948b0] shadow-sm"
+    : "button-primary";
+
   return (
     <div className="min-h-screen bg-black text-white flex">
       <Sidebar />
-      <div className="flex-1 overflow-y-auto mt-16 md:mt-0 p-4 md:p-8">
-        <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-5 mb-6">
+      <div className="flex-1 overflow-y-auto mt-16 md:mt-0">
+        <header
+          className={`px-4 py-4 md:px-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b ${
+            isEnterprise ? "border-slate-200 bg-white" : "border-white/10 bg-[var(--app-panel-solid)]"
+          }`}
+        >
           <div>
-            <div className="text-xs uppercase tracking-[0.2em] text-white/35 mb-2">Contacts</div>
-            <h1 className="text-2xl md:text-3xl font-bold">Customer and stakeholder records that outlive the deal stage</h1>
-            <p className="text-white/45 text-sm mt-2 max-w-3xl">
-              Manage active customers, buyer contacts, and champions separately from raw lead intake.
+            <div className={`text-xs uppercase tracking-[0.12em] ${isEnterprise ? "text-slate-500" : "text-white/35"}`}>Module</div>
+            <h1 className={`text-xl font-semibold ${isEnterprise ? "text-slate-900" : ""}`}>Contacts</h1>
+            <p className={`text-sm mt-1 max-w-xl ${isEnterprise ? "text-slate-600" : "text-white/45"}`}>
+              People and accounts linked to your pipeline.
             </p>
           </div>
-          <button onClick={() => { setShowForm(true); setEditing(null); setForm(EMPTY_FORM); }} className="button-primary">
-            Add contact
+          <button
+            type="button"
+            onClick={() => {
+              setShowForm(true);
+              setEditing(null);
+              setForm(EMPTY_FORM);
+            }}
+            className={primaryBtn}
+          >
+            Create contact
           </button>
-        </div>
+        </header>
+
+        <div className="p-4 md:p-8">
 
         <div className="premium-card p-5 mb-6">
           <div className="grid grid-cols-1 xl:grid-cols-[1fr_200px_200px_auto] gap-3">
@@ -195,7 +216,11 @@ export default function Contacts() {
               </div>
             </div>
           ))}
-          {contacts.length === 0 && <div className="premium-card p-8 text-center text-white/40">No contacts yet.</div>}
+          {contacts.length === 0 && (
+          <div className={`p-12 text-center rounded-xl border ${isEnterprise ? "border-slate-200 bg-white text-slate-500" : "premium-card text-white/40"}`}>
+            No contacts yet.
+          </div>
+        )}
         </div>
       </div>
     </div>

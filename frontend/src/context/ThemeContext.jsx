@@ -3,6 +3,10 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 const ThemeContext = createContext();
 
 export const THEMES = {
+  enterprise: {
+    label: "CRM",
+    description: "Light enterprise layout similar to Zoho or HubSpot.",
+  },
   dark: {
     label: "Midnight",
     description: "High-contrast dark workspace.",
@@ -18,7 +22,7 @@ export const THEMES = {
 };
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(() => localStorage.getItem("ai-sales-os:theme") || "dark");
+  const [theme, setTheme] = useState(() => localStorage.getItem("ai-sales-os:theme") || "enterprise");
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
