@@ -375,7 +375,6 @@ export default function LeadDetail() {
                   <div className="space-y-2">
                     {[
                       { label: "Generate Follow-Up", path: "/followup" },
-                      { label: "Email Sequence", path: "/sequence" },
                       { label: "Ask Sales Coach", path: "/coach" },
                     ].map((action) => (
                       <button

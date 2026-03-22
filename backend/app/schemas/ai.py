@@ -36,19 +36,6 @@ class SalesCoachRequest(BaseModel):
 class SalesCoachResponse(BaseModel):
     response: str
 
-class EmailSequenceRequest(BaseModel):
-    lead_id: int
-    context: str
-    tone: str
-
-class EmailDay(BaseModel):
-    day: int
-    subject: str
-    body: str
-
-class EmailSequenceResponse(BaseModel):
-    sequence: List[EmailDay]
-
 class MeetingAnalysisRequest(BaseModel):
     lead_id: int
     notes: str

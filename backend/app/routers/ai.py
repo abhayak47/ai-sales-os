@@ -10,8 +10,6 @@ from app.models.lead import Lead
 from app.models.task import Task
 from app.schemas.ai import (
     DealStrategyResponse,
-    EmailSequenceRequest,
-    EmailSequenceResponse,
     ExecutionPlanResponse,
     FollowUpRequest,
     FollowUpResponse,
@@ -32,7 +30,6 @@ from app.services.ai import (
     analyze_lead,
     analyze_meeting_notes,
     generate_deal_strategy,
-    generate_email_sequence,
     generate_execution_plan,
     generate_followup,
     generate_meeting_prep,
@@ -54,7 +51,6 @@ CREDIT_COSTS = {
     "followup": 1,
     "analyze_lead": 3,
     "score_lead": 1,
-    "email_sequence": 5,
     "coach": 1,
     "meeting_analysis": 3,
     "deal_strategy": 3,
@@ -254,41 +250,6 @@ def score_lead_endpoint(
         )
     except Exception as exc:
         _refund_credits(db, user, CREDIT_COSTS["score_lead"])
-        raise HTTPException(status_code=500, detail=f"AI error: {str(exc)}")
-    return result
-
-
-@router.post("/email-sequence", response_model=EmailSequenceResponse)
-def email_sequence_endpoint(
-    request: EmailSequenceRequest,
-    token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_db),
-):
-    user = get_current_user(token, db)
-    if not user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    lead = _get_owned_lead(request.lead_id, user.id, db)
-    if not deduct_credits(db, user, "email_sequence", CREDIT_COSTS["email_sequence"]):
-        raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['email_sequence']} credits. Please upgrade.")
-    context_snapshot = _build_lead_context(lead, db)
-    try:
-        result = generate_email_sequence(
-            name=lead.name,
-            company=lead.company or "their company",
-            context=f"{request.context}\n\nTimeline context:\n{context_snapshot}",
-            tone=request.tone,
-        )
-        _save_artifact(
-            db,
-            user_id=user.id,
-            lead=lead,
-            artifact_type="email_sequence",
-            title=f"Email sequence for {lead.name}",
-            payload=result,
-            context_snapshot=context_snapshot,
-        )
-    except Exception as exc:
-        _refund_credits(db, user, CREDIT_COSTS["email_sequence"])
         raise HTTPException(status_code=500, detail=f"AI error: {str(exc)}")
     return result
 

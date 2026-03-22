@@ -117,61 +117,6 @@ Return ONLY the JSON.
     return _json_completion(prompt, temperature=0.3, max_tokens=200)
 
 
-def generate_email_sequence(name: str, company: str, context: str, tone: str) -> dict:
-    prompt = f"""
-You are an expert sales email copywriter. Create a 7-day email follow-up sequence.
-
-Lead Name: {name}
-Company: {company or "their company"}
-Context: {context}
-Tone: {tone}
-
-Create 7 emails, one per day. Each email should be different — vary the angle, hook, and CTA.
-
-Return ONLY this JSON:
-{{
-    "sequence": [
-        {{
-            "day": 1,
-            "subject": "email subject",
-            "body": "full email body"
-        }},
-        {{
-            "day": 2,
-            "subject": "email subject",
-            "body": "full email body"
-        }},
-        {{
-            "day": 3,
-            "subject": "email subject",
-            "body": "full email body"
-        }},
-        {{
-            "day": 4,
-            "subject": "email subject",
-            "body": "full email body"
-        }},
-        {{
-            "day": 5,
-            "subject": "email subject",
-            "body": "full email body"
-        }},
-        {{
-            "day": 6,
-            "subject": "email subject",
-            "body": "full email body"
-        }},
-        {{
-            "day": 7,
-            "subject": "email subject",
-            "body": "full email body"
-        }}
-    ]
-}}
-
-Make each email unique, valuable and not spammy. Return ONLY the JSON.
-"""
-    return _json_completion(prompt, temperature=0.7, max_tokens=2000)
 
 
 def sales_coach_chat(message: str, leads_context: str, chat_history: list) -> str:

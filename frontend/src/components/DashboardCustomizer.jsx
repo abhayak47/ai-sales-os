@@ -3,10 +3,10 @@ const SECTION_OPTIONS = [
   { key: "savedViews", label: "Saved views", description: "Quick access to high-value lead segments." },
   { key: "priorityPlays", label: "Priority plays", description: "AI-ranked deal moves from command center." },
   { key: "todayFocus", label: "Today focus", description: "Daily operating shortlist." },
-  { key: "executionQueue", label: "Execution queue", description: "Next tasks, follow-ups, and sequences." },
+  { key: "executionQueue", label: "Execution queue", description: "Next tasks, follow-ups, and execution work." },
   { key: "riskRadar", label: "Risk radar", description: "Deals most likely to slip." },
   { key: "pipelineOverview", label: "Pipeline overview", description: "Stage distribution and movement." },
-  { key: "utilities", label: "Revenue utilities", description: "Coach, follow-up, sequence, and capture tools." },
+  { key: "utilities", label: "Revenue utilities", description: "Coach, follow-up, pricing, and capture tools." },
 ];
 
 const DENSITY_OPTIONS = [
@@ -19,10 +19,13 @@ export default function DashboardCustomizer({
   open,
   mode,
   density,
+  theme,
+  themes,
   sections,
   onClose,
   onModeChange,
   onDensityChange,
+  onThemeChange,
   onSectionToggle,
   onReset,
 }) {
@@ -86,6 +89,24 @@ export default function DashboardCustomizer({
           </div>
         </div>
 
+        <div className="border border-white/10 rounded-2xl p-5 mb-5 bg-white/[0.02]">
+          <div className="text-sm font-semibold mb-3">Theme</div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {Object.entries(themes).map(([value, item]) => (
+              <button
+                key={value}
+                onClick={() => onThemeChange(value)}
+                className={`text-left border rounded-2xl p-4 transition ${
+                  theme === value ? "border-white/30 bg-white/[0.06]" : "border-white/10 hover:border-white/20"
+                }`}
+              >
+                <div className="font-medium">{item.label}</div>
+                <div className="text-xs text-white/45 mt-1">{item.description}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="border border-white/10 rounded-2xl p-5 bg-white/[0.02]">
           <div className="flex items-center justify-between gap-3 mb-4">
             <div>
@@ -126,6 +147,9 @@ export default function DashboardCustomizer({
                 </div>
               </button>
             ))}
+          </div>
+          <div className="text-xs text-white/35 mt-4">
+            Tip: drag panels directly on the dashboard using the handle in each card to reorder the workspace.
           </div>
         </div>
       </div>
