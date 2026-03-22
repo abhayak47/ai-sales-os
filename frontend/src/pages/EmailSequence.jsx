@@ -19,7 +19,7 @@ export default function EmailSequence() {
   const fetchLeads = async () => {
     try {
       const res = await API.get("/leads/");
-      setLeads(res.data);
+      setLeads(res.data.items || []);
     } catch (err) {
       console.error(err);
     }

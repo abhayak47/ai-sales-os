@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import API from "../api/axios";
 import ExecutionQueue from "./ExecutionQueue";
@@ -75,6 +75,43 @@ export default function StrategyLab({ leadId }) {
     stakeholderMap: null,
     meetingPrep: null,
   });
+
+  useEffect(() => {
+    hydrateSavedOutputs();
+  }, [leadId]);
+
+  const hydrateSavedOutputs = async () => {
+    try {
+      const res = await API.get(`/memory/artifacts/${leadId}`, {
+        params: {
+          artifact_type: "deal_strategy,objection_playbook,revival_campaign,stakeholder_map,meeting_prep,execution_plan",
+          limit: 12,
+        },
+      });
+
+      const artifacts = res.data;
+      const latestByType = {};
+      artifacts.forEach((artifact) => {
+        if (!latestByType[artifact.artifact_type]) {
+          latestByType[artifact.artifact_type] = artifact.payload;
+        }
+      });
+
+      setOutputs({
+        dealStrategy: latestByType.deal_strategy || null,
+        objectionPlaybook: latestByType.objection_playbook || null,
+        revivalCampaign: latestByType.revival_campaign || null,
+        stakeholderMap: latestByType.stakeholder_map || null,
+        meetingPrep: latestByType.meeting_prep || null,
+      });
+      setExecutionPlan(latestByType.execution_plan || null);
+      if (latestByType.objection_playbook?.objection) {
+        setObjection(latestByType.objection_playbook.objection);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const runTool = async (toolId) => {
     const tool = TOOL_CONFIG[toolId];

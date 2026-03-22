@@ -9,7 +9,7 @@ const PRIORITY_STYLES = {
   low: "text-white/60 border-white/10 bg-white/[0.03]",
 };
 
-export default function ExecutionQueue({ leadId = null, compact = false, refreshKey = 0 }) {
+export default function ExecutionQueue({ leadId = null, compact = false, refreshKey = 0, limit = null }) {
   const [queue, setQueue] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -21,7 +21,8 @@ export default function ExecutionQueue({ leadId = null, compact = false, refresh
     setLoading(true);
     try {
       const res = leadId ? await API.get(`/tasks/lead/${leadId}`) : await API.get("/tasks/queue");
-      setQueue(leadId ? res.data : res.data.items);
+      const items = leadId ? res.data : res.data.items;
+      setQueue(limit ? items.slice(0, limit) : items);
     } catch (err) {
       console.error(err);
     } finally {

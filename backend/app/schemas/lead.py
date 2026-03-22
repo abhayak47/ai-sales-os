@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import List, Optional
 from datetime import datetime
 
 class LeadCreate(BaseModel):
@@ -39,3 +39,44 @@ class LeadResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class LeadListSummary(BaseModel):
+    total: int
+    new: int
+    contacted: int
+    interested: int
+    converted: int
+    lost: int
+    needs_attention: int
+
+
+class LeadListMeta(BaseModel):
+    page: int
+    page_size: int
+    total: int
+    total_pages: int
+    search: Optional[str] = None
+    status: Optional[str] = None
+    view: Optional[str] = None
+    sort_by: str
+    sort_dir: str
+
+
+class LeadListResponse(BaseModel):
+    items: List[LeadResponse]
+    meta: LeadListMeta
+    summary: LeadListSummary
+
+
+class SavedViewCard(BaseModel):
+    id: str
+    label: str
+    description: str
+    count: int
+    path: str
+    accent: str
+
+
+class SavedViewsResponse(BaseModel):
+    views: List[SavedViewCard]

@@ -9,7 +9,7 @@ const PRIORITY_STYLES = {
   low: "border-white/10 bg-white/5 text-white/70",
 };
 
-export default function ActionQueue() {
+export default function ActionQueue({ limit = 4, compact = false }) {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -39,13 +39,15 @@ export default function ActionQueue() {
 
   if (!data) return null;
 
+  const plays = data.plays.slice(0, limit);
+
   return (
-    <div className="border border-white/10 rounded-xl p-5 mb-6">
+    <div className="border border-white/10 rounded-2xl p-5 bg-white/[0.02]">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
         <div>
-          <h2 className="text-lg font-semibold">AI Deal Command Center</h2>
+          <h2 className="text-lg font-semibold">Priority Plays</h2>
           <p className="text-white/40 text-sm mt-1">
-            A prioritized action queue built from momentum, inactivity, relationship health, and stage.
+            The most important moves from your command center, ranked by urgency and momentum.
           </p>
         </div>
         <div className="flex gap-3 text-xs">
@@ -62,7 +64,7 @@ export default function ActionQueue() {
       </div>
 
       <div className="space-y-3">
-        {data.plays.map((play) => (
+        {plays.map((play) => (
           <div
             key={play.lead_id}
             className="border border-white/10 rounded-xl p-4 hover:border-white/20 transition"
@@ -80,9 +82,11 @@ export default function ActionQueue() {
                   {play.next_best_action} via {play.recommended_channel} {play.recommended_timing.toLowerCase()}.
                 </div>
                 <div className="text-sm text-white/50 mb-3">{play.why_now}</div>
-                <div className="bg-white/5 rounded-lg p-3 text-sm text-white/70">
-                  {play.draft_message}
-                </div>
+                {!compact && (
+                  <div className="bg-white/5 rounded-lg p-3 text-sm text-white/70">
+                    {play.draft_message}
+                  </div>
+                )}
                 <div className="flex flex-wrap gap-2 mt-3">
                   {play.evidence.slice(0, 3).map((item) => (
                     <span key={item} className="text-xs text-white/40 border border-white/10 rounded-full px-2 py-1">
@@ -92,7 +96,7 @@ export default function ActionQueue() {
                 </div>
               </div>
 
-              <div className="w-full md:w-44 flex flex-col gap-2">
+              <div className="w-full md:w-40 flex flex-col gap-2">
                 <div className="border border-white/10 rounded-lg p-3 bg-white/5">
                   <div className="text-xs text-white/40 mb-1">Momentum</div>
                   <div className="text-2xl font-bold">{play.momentum_score}</div>

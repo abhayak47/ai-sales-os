@@ -44,6 +44,7 @@ from app.services.ai import (
 )
 from app.services.auth import deduct_credits, get_current_user
 from app.services.documents import extract_text_from_upload
+from app.services.lead_memory import get_pinned_facts, get_recent_artifacts, save_ai_artifact, build_memory_context
 from app.services.research import search_web_briefs
 
 router = APIRouter(prefix="/ai", tags=["AI"])
@@ -89,6 +90,8 @@ def _recent_activities(lead_id: int, db: Session):
 
 def _build_lead_context(lead: Lead, db: Session) -> str:
     activities = list(reversed(_recent_activities(lead.id, db)))
+    pinned_facts = get_pinned_facts(db, user_id=lead.user_id, lead_id=lead.id)
+    recent_artifacts = get_recent_artifacts(db, user_id=lead.user_id, lead_id=lead.id, limit=6)
     activity_lines = []
     for activity in activities:
         description = activity.description or "No additional detail"
@@ -112,7 +115,20 @@ def _build_lead_context(lead: Lead, db: Session) -> str:
             f"Last activity timestamp: {last_activity}",
             "Timeline notes:",
             "\n".join(activity_lines) if activity_lines else "- No activities logged yet",
+            build_memory_context(lead, list(reversed(activities)), pinned_facts, recent_artifacts),
         ]
+    )
+
+
+def _save_artifact(db: Session, *, user_id: int, lead: Lead, artifact_type: str, title: str, payload, context_snapshot: str):
+    return save_ai_artifact(
+        db,
+        user_id=user_id,
+        lead_id=lead.id,
+        artifact_type=artifact_type,
+        title=title,
+        payload=payload,
+        context_snapshot=context_snapshot,
     )
 
 
@@ -178,13 +194,23 @@ def analyze_lead_endpoint(
     lead = _get_owned_lead(request.lead_id, user.id, db)
     if not deduct_credits(db, user, "analyze_lead", CREDIT_COSTS["analyze_lead"]):
         raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['analyze_lead']} credits. Please upgrade.")
+    context_snapshot = _build_lead_context(lead, db)
     try:
         result = analyze_lead(
             name=lead.name,
             company=lead.company or "Unknown",
             status=lead.status,
             notes=lead.notes or "",
-            timeline_context=_build_lead_context(lead, db),
+            timeline_context=context_snapshot,
+        )
+        _save_artifact(
+            db,
+            user_id=user.id,
+            lead=lead,
+            artifact_type="lead_analysis",
+            title=f"AI analysis for {lead.name}",
+            payload=result,
+            context_snapshot=context_snapshot,
         )
     except Exception as exc:
         _refund_credits(db, user, CREDIT_COSTS["analyze_lead"])
@@ -204,18 +230,28 @@ def score_lead_endpoint(
     lead = _get_owned_lead(lead_id, user.id, db)
     if not deduct_credits(db, user, "score_lead", CREDIT_COSTS["score_lead"]):
         raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['score_lead']} credits. Please upgrade.")
+    context_snapshot = _build_lead_context(lead, db)
     try:
         result = score_lead(
             name=lead.name,
             company=lead.company or "Unknown",
             status=lead.status,
             notes=lead.notes or "",
-            timeline_context=_build_lead_context(lead, db),
+            timeline_context=context_snapshot,
         )
         lead.score = result["score"]
         lead.predicted_revenue = result["predicted_revenue"]
         lead.follow_up_date = result["follow_up_date"]
         db.commit()
+        _save_artifact(
+            db,
+            user_id=user.id,
+            lead=lead,
+            artifact_type="lead_score",
+            title=f"Lead score for {lead.name}",
+            payload=result,
+            context_snapshot=context_snapshot,
+        )
     except Exception as exc:
         _refund_credits(db, user, CREDIT_COSTS["score_lead"])
         raise HTTPException(status_code=500, detail=f"AI error: {str(exc)}")
@@ -234,12 +270,22 @@ def email_sequence_endpoint(
     lead = _get_owned_lead(request.lead_id, user.id, db)
     if not deduct_credits(db, user, "email_sequence", CREDIT_COSTS["email_sequence"]):
         raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['email_sequence']} credits. Please upgrade.")
+    context_snapshot = _build_lead_context(lead, db)
     try:
         result = generate_email_sequence(
             name=lead.name,
             company=lead.company or "their company",
-            context=f"{request.context}\n\nTimeline context:\n{_build_lead_context(lead, db)}",
+            context=f"{request.context}\n\nTimeline context:\n{context_snapshot}",
             tone=request.tone,
+        )
+        _save_artifact(
+            db,
+            user_id=user.id,
+            lead=lead,
+            artifact_type="email_sequence",
+            title=f"Email sequence for {lead.name}",
+            payload=result,
+            context_snapshot=context_snapshot,
         )
     except Exception as exc:
         _refund_credits(db, user, CREDIT_COSTS["email_sequence"])
@@ -294,6 +340,7 @@ def meeting_analysis_endpoint(
     lead = _get_owned_lead(request.lead_id, user.id, db)
     if not deduct_credits(db, user, "meeting_analysis", CREDIT_COSTS["meeting_analysis"]):
         raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['meeting_analysis']} credits. Please upgrade.")
+    context_snapshot = _build_lead_context(lead, db)
 
     try:
         research_briefs = search_web_briefs(_build_research_query(lead, db), limit=5)
@@ -301,9 +348,18 @@ def meeting_analysis_endpoint(
             notes=request.notes,
             lead_name=lead.name,
             company=lead.company or "Unknown",
-            context=_build_lead_context(lead, db),
+            context=context_snapshot,
             mom_template=request.mom_template or "",
             research_briefs=research_briefs,
+        )
+        _save_artifact(
+            db,
+            user_id=user.id,
+            lead=lead,
+            artifact_type="meeting_analysis",
+            title=f"Meeting intel for {lead.name}",
+            payload=result,
+            context_snapshot=context_snapshot,
         )
     except Exception as exc:
         _refund_credits(db, user, CREDIT_COSTS["meeting_analysis"])
@@ -328,6 +384,7 @@ async def meeting_analysis_upload_endpoint(
     lead = _get_owned_lead(lead_id, user.id, db)
     if not deduct_credits(db, user, "meeting_analysis", CREDIT_COSTS["meeting_analysis"]):
         raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['meeting_analysis']} credits. Please upgrade.")
+    context_snapshot = _build_lead_context(lead, db)
 
     try:
         file_content = await transcript_file.read()
@@ -338,9 +395,18 @@ async def meeting_analysis_upload_endpoint(
             notes=merged_notes,
             lead_name=lead.name,
             company=lead.company or "Unknown",
-            context=_build_lead_context(lead, db),
+            context=context_snapshot,
             mom_template=mom_template,
             research_briefs=research_briefs,
+        )
+        _save_artifact(
+            db,
+            user_id=user.id,
+            lead=lead,
+            artifact_type="meeting_analysis",
+            title=f"Meeting intel for {lead.name}",
+            payload=result,
+            context_snapshot=context_snapshot,
         )
     except Exception as exc:
         _refund_credits(db, user, CREDIT_COSTS["meeting_analysis"])
@@ -361,12 +427,22 @@ def deal_strategy_endpoint(
     lead = _get_owned_lead(request.lead_id, user.id, db)
     if not deduct_credits(db, user, "deal_strategy", CREDIT_COSTS["deal_strategy"]):
         raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['deal_strategy']} credits. Please upgrade.")
+    context_snapshot = _build_lead_context(lead, db)
     try:
         result = generate_deal_strategy(
             lead_name=lead.name,
             company=lead.company or "Unknown",
             status=lead.status,
-            context=_build_lead_context(lead, db),
+            context=context_snapshot,
+        )
+        _save_artifact(
+            db,
+            user_id=user.id,
+            lead=lead,
+            artifact_type="deal_strategy",
+            title=f"Deal strategy for {lead.name}",
+            payload=result,
+            context_snapshot=context_snapshot,
         )
     except Exception as exc:
         _refund_credits(db, user, CREDIT_COSTS["deal_strategy"])
@@ -386,12 +462,22 @@ def objection_playbook_endpoint(
     lead = _get_owned_lead(request.lead_id, user.id, db)
     if not deduct_credits(db, user, "objection_playbook", CREDIT_COSTS["objection_playbook"]):
         raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['objection_playbook']} credits. Please upgrade.")
+    context_snapshot = _build_lead_context(lead, db)
     try:
         result = generate_objection_playbook(
             lead_name=lead.name,
             company=lead.company or "Unknown",
             objection=request.objection,
-            context=_build_lead_context(lead, db),
+            context=context_snapshot,
+        )
+        _save_artifact(
+            db,
+            user_id=user.id,
+            lead=lead,
+            artifact_type="objection_playbook",
+            title=f"Objection playbook for {lead.name}",
+            payload={**result, "objection": request.objection},
+            context_snapshot=context_snapshot,
         )
     except Exception as exc:
         _refund_credits(db, user, CREDIT_COSTS["objection_playbook"])
@@ -411,12 +497,22 @@ def revival_campaign_endpoint(
     lead = _get_owned_lead(request.lead_id, user.id, db)
     if not deduct_credits(db, user, "revival_campaign", CREDIT_COSTS["revival_campaign"]):
         raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['revival_campaign']} credits. Please upgrade.")
+    context_snapshot = _build_lead_context(lead, db)
     try:
         result = generate_revival_campaign(
             lead_name=lead.name,
             company=lead.company or "Unknown",
             status=lead.status,
-            context=_build_lead_context(lead, db),
+            context=context_snapshot,
+        )
+        _save_artifact(
+            db,
+            user_id=user.id,
+            lead=lead,
+            artifact_type="revival_campaign",
+            title=f"Revival campaign for {lead.name}",
+            payload=result,
+            context_snapshot=context_snapshot,
         )
     except Exception as exc:
         _refund_credits(db, user, CREDIT_COSTS["revival_campaign"])
@@ -436,11 +532,21 @@ def stakeholder_map_endpoint(
     lead = _get_owned_lead(request.lead_id, user.id, db)
     if not deduct_credits(db, user, "stakeholder_map", CREDIT_COSTS["stakeholder_map"]):
         raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['stakeholder_map']} credits. Please upgrade.")
+    context_snapshot = _build_lead_context(lead, db)
     try:
         result = generate_stakeholder_map(
             lead_name=lead.name,
             company=lead.company or "Unknown",
-            context=_build_lead_context(lead, db),
+            context=context_snapshot,
+        )
+        _save_artifact(
+            db,
+            user_id=user.id,
+            lead=lead,
+            artifact_type="stakeholder_map",
+            title=f"Stakeholder map for {lead.name}",
+            payload=result,
+            context_snapshot=context_snapshot,
         )
     except Exception as exc:
         _refund_credits(db, user, CREDIT_COSTS["stakeholder_map"])
@@ -460,13 +566,23 @@ def meeting_prep_endpoint(
     lead = _get_owned_lead(request.lead_id, user.id, db)
     if not deduct_credits(db, user, "meeting_prep", CREDIT_COSTS["meeting_prep"]):
         raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['meeting_prep']} credits. Please upgrade.")
+    context_snapshot = _build_lead_context(lead, db)
     try:
         result = generate_meeting_prep(
             lead_name=lead.name,
             company=lead.company or "Unknown",
             status=lead.status,
-            context=_build_lead_context(lead, db),
+            context=context_snapshot,
             research_briefs=search_web_briefs(_build_research_query(lead, db), limit=6),
+        )
+        _save_artifact(
+            db,
+            user_id=user.id,
+            lead=lead,
+            artifact_type="meeting_prep",
+            title=f"Meeting prep for {lead.name}",
+            payload=result,
+            context_snapshot=context_snapshot,
         )
     except Exception as exc:
         _refund_credits(db, user, CREDIT_COSTS["meeting_prep"])
@@ -487,13 +603,14 @@ def activate_execution_endpoint(
     lead = _get_owned_lead(request.lead_id, user.id, db)
     if not deduct_credits(db, user, "execution_plan", CREDIT_COSTS["execution_plan"]):
         raise HTTPException(status_code=403, detail=f"Need {CREDIT_COSTS['execution_plan']} credits. Please upgrade.")
+    context_snapshot = _build_lead_context(lead, db)
 
     try:
         result = generate_execution_plan(
             lead_name=lead.name,
             company=lead.company or "Unknown",
             status=lead.status,
-            context=_build_lead_context(lead, db),
+            context=context_snapshot,
         )
 
         db.query(Task).filter(
@@ -543,6 +660,15 @@ def activate_execution_endpoint(
             ))
 
         db.commit()
+        _save_artifact(
+            db,
+            user_id=user.id,
+            lead=lead,
+            artifact_type="execution_plan",
+            title=f"Execution plan for {lead.name}",
+            payload=result,
+            context_snapshot=context_snapshot,
+        )
     except Exception as exc:
         db.rollback()
         _refund_credits(db, user, CREDIT_COSTS["execution_plan"])

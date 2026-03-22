@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import API from "../api/axios";
 import DealCommandCenter from "../components/DealCommandCenter";
+import LeadMemoryPanel from "../components/LeadMemoryPanel";
 import MeetingIntel from "../components/MeetingIntel";
 import Sidebar from "../components/Sidebar";
 import SmartFollowUp from "../components/SmartFollowUp";
@@ -40,6 +41,7 @@ export default function LeadDetail() {
   useEffect(() => {
     fetchLead();
     fetchActivities();
+    hydrateSavedAnalysis();
   }, [id]);
 
   const fetchLead = async () => {
@@ -57,6 +59,19 @@ export default function LeadDetail() {
     try {
       const res = await API.get(`/activities/lead/${id}`);
       setActivities(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const hydrateSavedAnalysis = async () => {
+    try {
+      const res = await API.get(`/memory/artifacts/${id}`, {
+        params: { artifact_type: "lead_analysis", limit: 1 },
+      });
+      if (res.data?.[0]?.payload) {
+        setAnalysis(res.data[0].payload);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -123,6 +138,7 @@ export default function LeadDetail() {
   const tabs = [
     { id: "command_center", label: "Command Center" },
     { id: "strategy_lab", label: "Strategy Lab" },
+    { id: "memory", label: "Lead Memory" },
     { id: "timeline", label: "Timeline" },
     { id: "ai_brain", label: "AI Brain" },
     { id: "smart_followup", label: "Smart Follow-Up" },
@@ -188,6 +204,7 @@ export default function LeadDetail() {
               <div className="md:col-span-2 space-y-4">
                 {activeTab === "command_center" && <DealCommandCenter leadId={id} />}
                 {activeTab === "strategy_lab" && <StrategyLab leadId={id} />}
+                {activeTab === "memory" && <LeadMemoryPanel leadId={id} />}
 
                 {activeTab === "timeline" && (
                   <div>

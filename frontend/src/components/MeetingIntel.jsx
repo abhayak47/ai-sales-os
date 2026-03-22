@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import API from "../api/axios";
 
@@ -21,6 +21,23 @@ export default function MeetingIntel({ leadId }) {
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    hydrateLatestAnalysis();
+  }, [leadId]);
+
+  const hydrateLatestAnalysis = async () => {
+    try {
+      const res = await API.get(`/memory/artifacts/${leadId}`, {
+        params: { artifact_type: "meeting_analysis", limit: 1 },
+      });
+      if (res.data?.[0]?.payload) {
+        setAnalysis(res.data[0].payload);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const handleAnalyze = async () => {
     if (!notes.trim() && !transcriptFile) return;
