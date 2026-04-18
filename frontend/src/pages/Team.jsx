@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import API from "../api/axios";
 import Sidebar from "../components/Sidebar";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 
 const EMPTY_FORM = {
   full_name: "",
@@ -18,7 +18,24 @@ export default function Team() {
   const [form, setForm] = useState(EMPTY_FORM);
 
   useEffect(() => {
-    fetchMembers();
+    let cancelled = false;
+
+    async function loadMembers() {
+      try {
+        const res = await API.get("/team/members");
+        if (!cancelled) {
+          setMembers(res.data || []);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    loadMembers();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const fetchMembers = async () => {

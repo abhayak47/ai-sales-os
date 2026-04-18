@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import API from "../api/axios";
-import { useAuth } from "../context/AuthContext";
+import API, { getApiErrorMessage } from "../api/axios";
+import { useAuth } from "../context/useAuth";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -29,7 +29,7 @@ export default function Signup() {
       login(null, loginRes.data.access_token);
       navigate("/onboarding");
     } catch (err) {
-      setError(err.response?.data?.detail || "Something went wrong");
+      setError(getApiErrorMessage(err));
     } finally {
       setLoading(false);
     }

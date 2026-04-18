@@ -4,8 +4,8 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import API from "../api/axios";
 import SavedViewsPanel from "../components/SavedViewsPanel";
 import Sidebar from "../components/Sidebar";
-import { useAuth } from "../context/AuthContext";
-import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../context/useAuth";
+import { useTheme } from "../context/useTheme";
 
 const STATUS_OPTIONS = ["All", "New", "Contacted", "Interested", "Converted", "Lost"];
 const SEGMENT_OPTIONS = ["All", "general", "inbound", "outbound", "partner", "expansion"];

@@ -1,30 +1,11 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
-
-const ThemeContext = createContext();
+import { useEffect, useMemo, useState } from "react";
+import { ThemeContext } from "./theme-context";
+import { THEMES } from "./themes";
 
 const STORAGE_KEY = "ai-sales-os:theme-v2";
 const LEGACY_KEY = "ai-sales-os:theme";
 /** One-time: ensures users see the new CRM look after upgrade (still overridable in Appearance). */
 const CRM_BOOT_KEY = "ai-sales-os:crm-layout-boot-v1";
-
-export const THEMES = {
-  enterprise: {
-    label: "CRM",
-    description: "Light enterprise layout similar to Zoho or HubSpot.",
-  },
-  dark: {
-    label: "Midnight",
-    description: "High-contrast dark workspace.",
-  },
-  light: {
-    label: "Canvas",
-    description: "Clean light workspace for long sessions.",
-  },
-  slate: {
-    label: "Slate",
-    description: "Muted professional grey-blue workspace.",
-  },
-};
 
 function readInitialTheme() {
   if (typeof window === "undefined") return "enterprise";
@@ -58,8 +39,4 @@ export function ThemeProvider({ children }) {
   const value = useMemo(() => ({ theme, setTheme, themes: THEMES }), [theme]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
-}
-
-export function useTheme() {
-  return useContext(ThemeContext);
 }

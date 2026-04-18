@@ -9,7 +9,7 @@ import ExecutionQueue from "../components/ExecutionQueue";
 import SavedViewsPanel from "../components/SavedViewsPanel";
 import Sidebar from "../components/Sidebar";
 import TodayFocus from "../components/TodayFocus";
-import { useTheme } from "../context/ThemeContext";
+import { useTheme } from "../context/useTheme";
 
 const WORKSPACE_MODES = {
   founder: {

@@ -14,17 +14,25 @@ export default function SavedViewsPanel({ compact = false }) {
   const [views, setViews] = useState([]);
 
   useEffect(() => {
-    fetchViews();
-  }, []);
+    let cancelled = false;
 
-  const fetchViews = async () => {
-    try {
-      const res = await API.get("/leads/views");
-      setViews(res.data.views || []);
-    } catch (err) {
-      console.error(err);
+    async function loadViews() {
+      try {
+        const res = await API.get("/leads/views");
+        if (!cancelled) {
+          setViews(res.data.views || []);
+        }
+      } catch (err) {
+        console.error(err);
+      }
     }
-  };
+
+    loadViews();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (views.length === 0) return null;
 

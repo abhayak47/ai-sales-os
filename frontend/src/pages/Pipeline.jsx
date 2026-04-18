@@ -80,7 +80,7 @@ export default function Pipeline() {
         title: `Moved to ${newStatus}`,
         description: `Status changed from ${source.droppableId} to ${newStatus}`,
       });
-    } catch (err) {
+    } catch {
       fetchLeads();
     }
   };

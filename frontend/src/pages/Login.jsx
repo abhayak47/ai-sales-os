@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import API from "../api/axios";
-import { useAuth } from "../context/AuthContext";
+import API, { getApiErrorMessage } from "../api/axios";
+import { useAuth } from "../context/useAuth";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -24,7 +24,7 @@ export default function Login() {
       login(null, res.data.access_token);
       navigate("/dashboard");
     } catch (err) {
-      setError(err.response?.data?.detail || "Invalid email or password");
+      setError(getApiErrorMessage(err, "Invalid email or password"));
     } finally {
       setLoading(false);
     }

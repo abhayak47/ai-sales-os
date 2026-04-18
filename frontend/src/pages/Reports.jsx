@@ -7,17 +7,25 @@ export default function Reports() {
   const [report, setReport] = useState(null);
 
   useEffect(() => {
-    fetchReport();
-  }, []);
+    let cancelled = false;
 
-  const fetchReport = async () => {
-    try {
-      const res = await API.get("/dashboard/reporting");
-      setReport(res.data);
-    } catch (err) {
-      console.error(err);
+    async function loadReport() {
+      try {
+        const res = await API.get("/dashboard/reporting");
+        if (!cancelled) {
+          setReport(res.data);
+        }
+      } catch (err) {
+        console.error(err);
+      }
     }
-  };
+
+    loadReport();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-black text-white flex">
