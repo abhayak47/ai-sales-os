@@ -1,150 +1,99 @@
 import { useNavigate } from "react-router-dom";
 
-const DIFFERENTIATORS = [
+const FEATURE_TILES = [
+  "High-density dashboards for sales teams",
+  "AI summaries, playbooks, and next actions",
+  "Clean pipelines, activities, and account context",
+  "Fast navigation built for daily repetition",
+];
+
+const HIGHLIGHTS = [
   {
-    title: "Command, not admin",
-    desc: "The system decides what deserves attention next, drafts the move, and keeps execution alive.",
+    title: "Pipeline that stays readable",
+    description: "Compact cards, strong hierarchy, and information density that feels calm instead of crowded.",
   },
   {
-    title: "Deal memory that compounds",
-    desc: "Every meeting, note, AI output, and pinned fact sharpens future recommendations instead of disappearing.",
+    title: "AI where it helps",
+    description: "Recommendations, summaries, and follow-up generation live beside the workflow rather than interrupting it.",
   },
   {
-    title: "Built for modern revenue teams",
-    desc: "Founders, closers, and expansion teams can run different workspaces from the same operating system.",
+    title: "Built for frequent updates",
+    description: "Everything is optimized for quick scanning, small edits, and fast movement between contacts, deals, and tasks.",
   },
 ];
 
-const SIGNALS = [
-  "Lead-aware AI decisioning",
-  "Timeline-based meeting intelligence",
-  "Execution queues and next-best action",
-  "Custom workspaces and saved views",
-];
+function MarketingNav({ navigate }) {
+  return (
+    <nav className="page-frame flex items-center justify-between py-6">
+      <button type="button" onClick={() => navigate("/")} className="flex items-center gap-3 text-white">
+        <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-400 via-fuchsia-500 to-rose-700 text-xs font-bold shadow-[0_14px_28px_rgba(207,17,69,0.26)]">
+          S
+        </div>
+        <span className="text-lg font-semibold tracking-tight">Setu</span>
+      </button>
+      <div className="hidden items-center gap-8 text-sm text-white/60 md:flex">
+        <button type="button" onClick={() => navigate("/pricing")} className="transition hover:text-white">Pricing</button>
+        <button type="button" onClick={() => navigate("/login")} className="transition hover:text-white">About</button>
+      </div>
+      <div className="flex items-center gap-3">
+        <button type="button" onClick={() => navigate("/login")} className="text-sm font-medium text-white/70 transition hover:text-white">
+          Log In
+        </button>
+        <button type="button" onClick={() => navigate("/signup")} className="rounded-full bg-[linear-gradient(180deg,#ff2f63,#cf1145)] px-4 py-2 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(207,17,69,0.24)] transition hover:-translate-y-px">
+          Sign Up
+        </button>
+      </div>
+    </nav>
+  );
+}
 
 export default function Landing() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen app-shell text-white">
-      <nav className="page-frame flex items-center justify-between py-6">
-        <button onClick={() => navigate("/")} className="text-xl font-bold tracking-tight">
-          AI Sales OS
-        </button>
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate("/login")} className="button-secondary text-sm">
-            Login
+    <div className="app-shell overflow-hidden text-white">
+      <MarketingNav navigate={navigate} />
+
+      <section className="page-frame relative flex min-h-[72vh] flex-col items-center justify-center py-16 text-center">
+        <div className="pointer-events-none absolute inset-x-[-14%] top-6 h-[34rem] bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.06),transparent_42%)] opacity-80" />
+        <div className="pointer-events-none absolute inset-0 opacity-45" style={{ background: "radial-gradient(circle at 20% 20%, rgba(255,255,255,0.12), transparent 18%), radial-gradient(circle at 78% 32%, rgba(255,255,255,0.08), transparent 16%), radial-gradient(circle at 50% 70%, rgba(255,47,99,0.1), transparent 22%)" }} />
+
+        <div className="hero-chip fade-rise">Now in early access</div>
+        <h1 className="headline-display fade-rise mt-7 max-w-4xl text-5xl font-extrabold leading-[0.92] text-white md:text-7xl">
+          The CRM your team actually wants to use
+        </h1>
+        <p className="fade-rise mt-6 max-w-2xl text-lg leading-8 text-white/55">
+          Setu CRM helps you manage leads, automate workflows, and close deals faster with an interface designed for speed, density, and clarity.
+        </p>
+
+        <div className="fade-rise mt-9 flex flex-col gap-3 sm:flex-row">
+          <button type="button" onClick={() => navigate("/signup")} className="button-primary min-w-[144px]">
+            Get Started
           </button>
-          <button onClick={() => navigate("/signup")} className="button-primary text-sm">
-            Start free
+          <button type="button" onClick={() => navigate("/pricing")} className="button-secondary min-w-[144px]">
+            Learn More
           </button>
         </div>
-      </nav>
 
-      <section className="page-frame grid grid-cols-1 xl:grid-cols-[1.1fr_0.9fr] gap-10 py-14 md:py-20">
-        <div className="flex flex-col justify-center">
-          <div className="hero-chip mb-6">Revenue Operating System</div>
-          <h1 className="headline-display text-5xl md:text-7xl font-semibold leading-[0.96] mb-6">
-            The AI workspace that helps teams actually move deals forward.
-          </h1>
-          <p className="text-lg text-white/60 max-w-2xl leading-8 mb-8">
-            AI Sales OS is not another CRM that just stores records. It understands the timeline, remembers the deal,
-            prioritizes the next move, prepares the rep, and turns strategy into execution.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 mb-8">
-            <button onClick={() => navigate("/signup")} className="button-primary text-base">
-              Launch the workspace
-            </button>
-            <button onClick={() => navigate("/login")} className="button-secondary text-base">
-              Open existing account
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl">
-            {SIGNALS.map((item) => (
-              <div key={item} className="premium-card px-4 py-4 text-sm text-white/70">
-                {item}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="glass-panel rounded-[2rem] p-6 md:p-8">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <div className="section-title mb-2">Live Command Preview</div>
-              <div className="text-2xl font-semibold">Today&apos;s operating pulse</div>
-            </div>
-            <div className="px-3 py-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-300 text-sm">
-              Active
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="premium-card p-5">
-              <div className="text-sm text-white/40 mb-2">Priority deal</div>
-              <div className="text-xl font-semibold mb-2">Krushnakant Kawade · CWW Ltd</div>
-              <p className="text-white/65 text-sm leading-7">
-                Buyer is interested, commercial framing has been discussed, and the next winning move is a market-fit
-                recommendation tied to export growth opportunity.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="metric-card p-4">
-                <div className="text-xs text-white/35 mb-1">Urgency</div>
-                <div className="text-3xl font-semibold">Critical</div>
-              </div>
-              <div className="metric-card p-4">
-                <div className="text-xs text-white/35 mb-1">Next move</div>
-                <div className="text-base font-semibold">Meeting prep + tailored note</div>
-              </div>
-            </div>
-
-            <div className="premium-card p-5">
-              <div className="text-sm text-white/40 mb-3">Why teams switch</div>
-              <div className="space-y-3">
-                {DIFFERENTIATORS.map((item) => (
-                  <div key={item.title}>
-                    <div className="font-medium">{item.title}</div>
-                    <div className="text-sm text-white/55 mt-1">{item.desc}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="page-frame py-10 md:py-16">
-        <div className="hero-chip mb-5">Built to Win Global Buyers</div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {[
-            {
-              title: "Founder mode",
-              desc: "Revenue pulse, decision deals, and risk visibility for teams where every deal matters.",
-            },
-            {
-              title: "Closer mode",
-              desc: "High-pressure execution views for reps who want signal, not noise or CRM clutter.",
-            },
-            {
-              title: "Expansion mode",
-              desc: "Customer growth workflows that bring post-sale intelligence into the same operating layer.",
-            },
-          ].map((item) => (
-            <div key={item.title} className="premium-card p-6">
-              <div className="text-lg font-semibold mb-2">{item.title}</div>
-              <div className="text-sm text-white/55 leading-7">{item.desc}</div>
+        <div className="mt-14 grid w-full max-w-5xl grid-cols-1 gap-4 md:grid-cols-4">
+          {FEATURE_TILES.map((item, index) => (
+            <div key={item} className="premium-card fade-rise px-4 py-4 text-left text-sm text-white/68" style={{ animationDelay: `${index * 60}ms` }}>
+              {item}
             </div>
           ))}
         </div>
       </section>
 
-      <footer className="page-frame py-8 text-sm text-white/35 border-t border-white/10">
-        AI Sales OS · Built for teams that want execution, context, and taste.
-      </footer>
+      <section className="page-frame pb-20">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+          {HIGHLIGHTS.map((item, index) => (
+            <div key={item.title} className="premium-card fade-rise p-6" style={{ animationDelay: `${index * 70}ms` }}>
+              <div className="mb-3 text-lg font-semibold">{item.title}</div>
+              <div className="text-sm leading-7 text-white/55">{item.description}</div>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

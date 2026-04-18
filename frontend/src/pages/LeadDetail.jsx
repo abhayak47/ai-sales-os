@@ -11,7 +11,7 @@ import Sidebar from "../components/Sidebar";
 import SmartFollowUp from "../components/SmartFollowUp";
 import StrategyLab from "../components/StrategyLab";
 import TeamCommentsPanel from "../components/TeamCommentsPanel";
-import { useTheme } from "../context/ThemeContext";
+import { useTheme } from "../context/useTheme";
 
 const ACTIVITY_ICONS = {
   call: "Call",

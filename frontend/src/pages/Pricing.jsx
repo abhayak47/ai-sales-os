@@ -5,31 +5,125 @@ import API from "../api/axios";
 
 const FREE_PLAN = {
   id: "free",
-  name: "Explorer",
+  name: "Free",
   price: 0,
   credits: 25,
-  description: "For evaluating the workspace with real deals before you scale usage.",
+  description: "For individuals getting started with CRM.",
   billing_type: "free",
-  buttonLabel: "Current Plan",
+  buttonLabel: "Get Started",
   features: [
-    "25 launch credits",
-    "Lead workspace and pipeline board",
-    "AI follow-up and sales coach",
-    "Deal command center and meeting intel",
+    "Up to 250 contacts",
+    "1 user",
+    "Basic sales pipeline",
+    "Email integration",
+    "Standard reports",
   ],
 };
 
+const DEFAULT_SUBSCRIPTION_CARDS = [
+  {
+    id: "pro",
+    name: "Pro",
+    price: 2900,
+    interval: "month",
+    description: "For growing teams that need more power.",
+    buttonLabel: "Start Free Trial",
+    features: [
+      "Up to 5,000 contacts",
+      "5 users",
+      "Advanced pipelines",
+      "Workflow automations",
+      "Third-party integrations",
+      "REST API access",
+      "Priority email support",
+    ],
+  },
+  {
+    id: "enterprise",
+    name: "Enterprise",
+    price: 9900,
+    interval: "month",
+    description: "For organizations that need full control.",
+    buttonLabel: "Contact Sales",
+    features: [
+      "Unlimited contacts",
+      "Unlimited users",
+      "SSO / SAML",
+      "Audit log",
+      "Custom roles and permissions",
+      "Dedicated account manager",
+      "99.9% uptime SLA",
+    ],
+  },
+];
+
 function formatPrice(price) {
-  return price ? `Rs ${(price / 100).toLocaleString()}` : "Rs 0";
+  if (!price) return "Free";
+  return `$${Math.round(price / 100)}`;
 }
 
-function buildPaidFeatureList(plan) {
-  return [
-    ...(plan.features || []),
-    "Lead memory and saved output history",
-    "Workspace customization and saved views",
-    "Execution queues and meeting prep",
-  ];
+function PricingNav({ navigate }) {
+  return (
+    <nav className="page-frame flex items-center justify-between py-6">
+      <button type="button" onClick={() => navigate("/")} className="flex items-center gap-3 text-white">
+        <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-400 via-fuchsia-500 to-rose-700 text-xs font-bold text-white shadow-[0_14px_28px_rgba(207,17,69,0.26)]">
+          S
+        </div>
+        <span className="text-lg font-semibold tracking-tight">Setu</span>
+      </button>
+      <div className="hidden items-center gap-8 text-sm text-white/60 md:flex">
+        <button type="button" onClick={() => navigate("/pricing")} className="transition hover:text-white">Pricing</button>
+        <button type="button" onClick={() => navigate("/")} className="transition hover:text-white">About</button>
+      </div>
+      <div className="flex items-center gap-3">
+        <button type="button" onClick={() => navigate("/login")} className="text-sm font-medium text-white/70 transition hover:text-white">
+          Log In
+        </button>
+        <button type="button" onClick={() => navigate("/signup")} className="rounded-full bg-[linear-gradient(180deg,#ff2f63,#cf1145)] px-4 py-2 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(207,17,69,0.24)] transition hover:-translate-y-px">
+          Sign Up
+        </button>
+      </div>
+    </nav>
+  );
+}
+
+function PricingCard({ plan, featured = false, actionLabel, onAction, loading }) {
+  return (
+    <div className={`premium-card relative flex h-full flex-col p-6 ${featured ? "accent-ring" : ""}`}>
+      {featured && (
+        <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[linear-gradient(180deg,#ff2f63,#cf1145)] px-3 py-1 text-[11px] font-semibold text-white">
+          Most Popular
+        </div>
+      )}
+      <div className="mb-6">
+        <div className="text-2xl font-semibold text-white">{plan.name}</div>
+        <div className="mt-2 text-sm text-white/50">{plan.description}</div>
+      </div>
+
+      <div className="mb-6 flex items-end gap-2">
+        <div className="text-5xl font-extrabold tracking-tight text-white">{formatPrice(plan.price)}</div>
+        <div className="pb-2 text-sm text-white/40">/mo</div>
+      </div>
+
+      <button
+        type="button"
+        onClick={onAction}
+        disabled={loading}
+        className={featured ? "button-primary mb-6 w-full" : "button-secondary mb-6 w-full"}
+      >
+        {loading ? "Processing..." : actionLabel}
+      </button>
+
+      <div className="space-y-3 text-sm text-white/62">
+        {plan.features.map((feature) => (
+          <div key={feature} className="flex items-start gap-3">
+            <span className="mt-1 text-pink-500">✓</span>
+            <span>{feature}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function Pricing() {
@@ -38,6 +132,7 @@ export default function Pricing() {
   const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(null);
   const [plansLoading, setPlansLoading] = useState(true);
+  const [annual, setAnnual] = useState(false);
 
   useEffect(() => {
     fetchPlans();
@@ -87,7 +182,7 @@ export default function Pricing() {
           alert(`${verifyRes.data.plan_name} unlocked. ${verifyRes.data.credits_added} credits added.`);
           navigate("/dashboard");
         },
-        theme: { color: "#0f172a" },
+        theme: { color: "#cf1145" },
       }).open();
     } catch {
       alert("Could not start the purchase flow.");
@@ -123,7 +218,7 @@ export default function Pricing() {
           alert(`${verifyRes.data.plan_name} activated. ${verifyRes.data.credits_added} credits added for this cycle.`);
           navigate("/dashboard");
         },
-        theme: { color: "#0f172a" },
+        theme: { color: "#cf1145" },
       }).open();
     } catch {
       alert("Could not start the subscription flow.");
@@ -132,119 +227,100 @@ export default function Pricing() {
     }
   };
 
-  const renderCard = (plan, isSubscription = false) => (
-    <div key={plan.id} className={`premium-card p-8 relative flex flex-col ${plan.id.includes("pro") ? "accent-ring" : ""}`}>
-      {plan.id.includes("pro") && (
-        <div className="absolute -top-3 left-6 hero-chip normal-case tracking-normal text-[11px]">
-          {isSubscription ? "Best recurring option" : "Best launch option"}
-        </div>
-      )}
-
-      <div className="mb-6">
-        <div className="section-title mb-3">{isSubscription ? "Subscription" : "Credit Pack"}</div>
-        <h2 className="text-2xl font-semibold mb-2">{plan.name}</h2>
-        <div className="flex items-end gap-2 mb-2">
-          <span className="text-4xl font-semibold">{formatPrice(plan.price)}</span>
-          <span className="text-white/40 text-sm">{isSubscription ? `per ${plan.interval}` : plan.billing_type === "free" ? "free" : "one-time"}</span>
-        </div>
-        <div className="text-sm text-white/40">{plan.credits} AI credits{isSubscription ? " per cycle" : ""}</div>
-        <div className="text-white/55 text-sm mt-4 leading-7">{plan.description}</div>
-      </div>
-
-      <div className="space-y-3 mb-8 flex-1">
-        {(plan.id === "free" ? plan.features : buildPaidFeatureList(plan)).map((feature) => (
-          <div key={feature} className="text-sm text-white/70">
-            {feature}
-          </div>
-        ))}
-      </div>
-
-      <button
-        onClick={() => {
-          if (plan.id === "free") return;
-          if (isSubscription) handleSubscriptionPurchase(plan.id);
-          else handlePackPurchase(plan.id);
-        }}
-        disabled={loading === plan.id || plan.id === "free"}
-        className={plan.id === "free" ? "button-secondary w-full" : "button-primary w-full disabled:opacity-50"}
-      >
-        {loading === plan.id
-          ? "Processing..."
-          : plan.id === "free"
-            ? plan.buttonLabel
-            : isSubscription
-              ? `Start ${plan.name}`
-              : `Buy ${plan.name}`}
-      </button>
-    </div>
-  );
+  const visibleSubscriptions = subscriptions.length ? subscriptions : DEFAULT_SUBSCRIPTION_CARDS;
+  const visiblePlans = [FREE_PLAN, ...visibleSubscriptions.slice(0, 2)];
 
   return (
-    <div className="min-h-screen app-shell text-white">
-      <nav className="page-frame flex items-center justify-between py-6">
-        <button className="text-xl font-bold" onClick={() => navigate("/")}>
-          AI Sales OS
-        </button>
-        <button onClick={() => navigate("/dashboard")} className="button-secondary text-sm">
-          Open dashboard
-        </button>
-      </nav>
+    <div className="app-shell min-h-screen text-white">
+      <PricingNav navigate={navigate} />
 
       <div className="page-frame py-10 md:py-16">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="hero-chip mb-5">Pricing</div>
-          <h1 className="headline-display text-5xl md:text-6xl font-semibold mb-5">Buy execution capacity, not seat-count bloat.</h1>
-          <p className="text-white/55 text-lg leading-8">
-            The value proposition is simple: your team gets an operating system that prioritizes deals, prepares meetings,
-            drafts follow-ups, and keeps execution moving.
+        <div className="mx-auto mb-16 max-w-4xl text-center">
+          <h1 className="headline-display text-5xl font-extrabold leading-[0.95] md:text-6xl">
+            Simple, transparent pricing
+          </h1>
+          <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-white/50">
+            No hidden fees. No surprises. Start free and scale as your team adopts the workflow.
           </p>
+
+          <div className="mt-8 inline-flex items-center gap-3 rounded-full border border-white/8 bg-white/[0.02] px-4 py-2 text-sm text-white/70">
+            <span className={!annual ? "text-white" : ""}>Monthly</span>
+            <button
+              type="button"
+              onClick={() => setAnnual((value) => !value)}
+              className={`relative h-6 w-11 rounded-full transition ${annual ? "bg-pink-600" : "bg-white/12"}`}
+            >
+              <span className={`absolute top-1 h-4 w-4 rounded-full bg-white transition ${annual ? "left-6" : "left-1"}`} />
+            </button>
+            <span className={annual ? "text-white" : ""}>Annual</span>
+          </div>
         </div>
 
         {plansLoading ? (
-          <div className="text-white/40">Loading pricing...</div>
+          <div className="premium-card p-8 text-center text-white/45">Loading pricing...</div>
         ) : (
-          <div className="space-y-16">
-            <section>
-              <div className="mb-8">
-                <div className="section-title mb-3">Launch Packs</div>
-                <h2 className="text-3xl font-semibold mb-2">For solo sellers and early teams moving fast</h2>
-                <p className="text-white/45 text-sm">Start with credit packs while shaping your workflow and proving adoption.</p>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {[FREE_PLAN, ...packs].map((plan) => renderCard(plan))}
-              </div>
-            </section>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            {visiblePlans.map((plan) => {
+              const isFeatured = plan.id.toLowerCase().includes("pro");
+              const actionLabel =
+                plan.id === "free"
+                  ? plan.buttonLabel
+                  : plan.id.toLowerCase().includes("enterprise")
+                    ? "Contact Sales"
+                    : "Start Free Trial";
 
-            <section>
-              <div className="mb-8">
-                <div className="section-title mb-3">Subscriptions</div>
-                <h2 className="text-3xl font-semibold mb-2">For teams that want the AI layer running every day</h2>
-                <p className="text-white/45 text-sm">Recurring plans keep the command center, meeting intelligence, and execution workflows always on.</p>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {subscriptions.map((plan) => renderCard(plan, true))}
-              </div>
-            </section>
+              return (
+                <PricingCard
+                  key={plan.id}
+                  plan={plan}
+                  featured={isFeatured}
+                  actionLabel={actionLabel}
+                  loading={loading === plan.id}
+                  onAction={() => {
+                    if (plan.id === "free") {
+                      navigate("/signup");
+                      return;
+                    }
 
-            <section className="premium-card p-8">
-              <div className="section-title mb-3">How to Position It</div>
-              <h2 className="text-3xl font-semibold mb-8">This product sells best as a revenue execution system.</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {[
-                  ["What am I buying?", "An AI operating layer for pipeline execution, not just lead storage."],
-                  ["Why is this different?", "It remembers the deal, prioritizes the next move, drafts the action, and keeps the rep in motion."],
-                  ["Who is it for?", "Founders, closers, and expansion teams who want sharp execution without enterprise CRM heaviness."],
-                  ["What should I say on demos?", "Pitch it as the AI workspace that helps revenue teams know what to do next and why."],
-                ].map(([q, a]) => (
-                  <div key={q} className="border border-white/10 rounded-2xl p-5">
-                    <div className="font-medium mb-2">{q}</div>
-                    <div className="text-sm text-white/55 leading-7">{a}</div>
-                  </div>
-                ))}
-              </div>
-            </section>
+                    if (subscriptions.some((item) => item.id === plan.id)) {
+                      handleSubscriptionPurchase(plan.id);
+                      return;
+                    }
+
+                    if (plan.id.toLowerCase().includes("enterprise") && !subscriptions.some((item) => item.id === plan.id)) {
+                      navigate("/signup");
+                      return;
+                    }
+
+                    if (packs.some((item) => item.id === plan.id)) {
+                      handlePackPurchase(plan.id);
+                      return;
+                    }
+
+                    handleSubscriptionPurchase(plan.id);
+                  }}
+                />
+              );
+            })}
           </div>
         )}
+
+        <section className="mx-auto mt-20 max-w-4xl text-center">
+          <h2 className="headline-display text-4xl font-extrabold">Frequently Asked Questions</h2>
+          <div className="mt-8 grid gap-4 text-left md:grid-cols-2">
+            {[
+              ["Can I start free?", "Yes. The free tier is designed for individual evaluation and early workflow setup."],
+              ["Is this built for AI features?", "Yes. The product structure supports insights, recommendations, and auto-generated summaries without overwhelming the main workflows."],
+              ["Can teams scale later?", "Yes. The layout and pricing model both support individual use, growing teams, and enterprise rollout."],
+              ["Do I need training to use it?", "No. The interface is intentionally clean, dense, and easy to scan so teams can adopt it quickly."],
+            ].map(([question, answer]) => (
+              <div key={question} className="premium-card p-5">
+                <div className="text-lg font-semibold text-white">{question}</div>
+                <div className="mt-2 text-sm leading-7 text-white/55">{answer}</div>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
     </div>
   );

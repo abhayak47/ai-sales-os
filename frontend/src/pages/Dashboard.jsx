@@ -13,97 +13,30 @@ import { useTheme } from "../context/useTheme";
 
 const WORKSPACE_MODES = {
   founder: {
-    label: "Leadership",
-    eyebrow: "Dashboard",
-    description: "A clear view of pipeline health, priorities, and risk—without the clutter.",
-    sections: {
-      stats: true,
-      workspacePulse: false,
-      savedViews: true,
-      priorityPlays: true,
-      todayFocus: true,
-      executionQueue: false,
-      riskRadar: true,
-      pipelineOverview: true,
-      utilities: false,
-    },
-    order: ["stats", "todayFocus", "priorityPlays", "riskRadar", "pipelineOverview", "savedViews", "workspacePulse", "executionQueue", "utilities"],
+    label: "Dashboard",
+    description: "Your CRM at a glance",
     heroPrimary: "/leads?view=decision_this_week",
-    heroPrimaryLabel: "Decisions due this week",
+    heroPrimaryLabel: "Decision deals",
     heroSecondary: "/pipeline",
     heroSecondaryLabel: "Open pipeline",
   },
   closer: {
-    label: "Sales",
-    eyebrow: "Dashboard",
-    description: "Focus on what moves deals forward today—tasks, follow-ups, and hot opportunities.",
-    sections: {
-      stats: true,
-      workspacePulse: false,
-      savedViews: true,
-      priorityPlays: true,
-      todayFocus: true,
-      executionQueue: true,
-      riskRadar: true,
-      pipelineOverview: false,
-      utilities: false,
-    },
-    order: ["stats", "priorityPlays", "todayFocus", "executionQueue", "savedViews", "riskRadar", "workspacePulse", "utilities"],
+    label: "Dashboard",
+    description: "High-priority opportunities and next actions",
     heroPrimary: "/leads?view=hot_deals",
-    heroPrimaryLabel: "Hot opportunities",
+    heroPrimaryLabel: "Hot deals",
     heroSecondary: "/followup",
     heroSecondaryLabel: "Draft follow-up",
   },
   csm: {
-    label: "Customer success",
-    eyebrow: "Dashboard",
-    description: "Renewals, expansion, and account health in one calm view.",
-    sections: {
-      stats: true,
-      workspacePulse: false,
-      savedViews: true,
-      priorityPlays: false,
-      todayFocus: true,
-      executionQueue: true,
-      riskRadar: false,
-      pipelineOverview: true,
-      utilities: false,
-    },
-    order: ["stats", "todayFocus", "executionQueue", "pipelineOverview", "savedViews", "workspacePulse", "priorityPlays", "riskRadar", "utilities"],
+    label: "Dashboard",
+    description: "Account health, renewals, and expansion opportunities",
     heroPrimary: "/leads?status=Converted",
     heroPrimaryLabel: "Won accounts",
     heroSecondary: "/coach",
-    heroSecondaryLabel: "Account coach",
+    heroSecondaryLabel: "Open coach",
   },
 };
-
-const DEFAULT_DENSITY = {
-  comfortable: {
-    heroPadding: "p-6 md:p-8",
-    sectionGap: "mb-6",
-    gridGap: "gap-6",
-  },
-  compact: {
-    heroPadding: "p-5 md:p-6",
-    sectionGap: "mb-4",
-    gridGap: "gap-4",
-  },
-  focused: {
-    heroPadding: "p-5 md:p-6",
-    sectionGap: "mb-5",
-    gridGap: "gap-4",
-  },
-};
-
-function StatCard({ label, value, sub }) {
-  return (
-    <div className="border border-white/10 rounded-2xl p-4 bg-white/[0.02]">
-      <div className="text-xs text-white/35 mb-2">{label}</div>
-      <div className="text-2xl md:text-3xl font-bold mb-1">{value}</div>
-      <div className="text-white/30 text-xs">{sub}</div>
-    </div>
-  );
-}
 
 function getPreferenceKey(email) {
   return `ai-sales-os:dashboard:${email || "guest"}`;
@@ -119,33 +52,120 @@ function readStoredPreferences(email) {
   }
 }
 
-function reorderPanels(order, draggedId, targetId) {
-  if (!draggedId || !targetId || draggedId === targetId) return order;
-  const next = [...order];
-  const draggedIndex = next.indexOf(draggedId);
-  const targetIndex = next.indexOf(targetId);
-  if (draggedIndex === -1 || targetIndex === -1) return order;
-  next.splice(draggedIndex, 1);
-  next.splice(targetIndex, 0, draggedId);
-  return next;
+function StatCard({ label, value, sub, tone = "neutral" }) {
+  const toneClass =
+    tone === "success"
+      ? "text-emerald-400"
+      : tone === "danger"
+        ? "text-rose-400"
+        : "text-white/45";
+
+  return (
+    <div className="crm-stat-card">
+      <div className="mb-2 text-xs text-white/35">{label}</div>
+      <div className="text-[2rem] font-extrabold leading-none text-white">{value}</div>
+      <div className={`mt-3 text-xs font-semibold ${toneClass}`}>{sub}</div>
+    </div>
+  );
 }
 
-function DashboardPanel({ id, children, span = "half", onDragStart, onDrop }) {
+function MiniAreaChart({ points }) {
+  const width = 460;
+  const height = 220;
+  const topPadding = 22;
+  const bottomPadding = 18;
+  const max = Math.max(...points, 1);
+  const min = Math.min(...points, 0);
+  const range = Math.max(max - min, 1);
+
+  const linePath = points
+    .map((value, index) => {
+      const x = (index / (points.length - 1 || 1)) * width;
+      const y = topPadding + ((max - value) / range) * (height - topPadding - bottomPadding);
+      return `${index === 0 ? "M" : "L"} ${x} ${y}`;
+    })
+    .join(" ");
+
+  const areaPath = `${linePath} L ${width} ${height} L 0 ${height} Z`;
+
   return (
-    <div
-      draggable
-      onDragStart={() => onDragStart(id)}
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={() => onDrop(id)}
-      className={`relative group border border-white/10 rounded-2xl p-5 bg-white/[0.02] ${span === "full" ? "xl:col-span-2" : ""}`}
-    >
-      <div
-        className="absolute top-4 right-4 z-10 cursor-grab active:cursor-grabbing text-white/20 hover:text-white/45 transition text-[10px] tracking-tighter select-none"
-        title="Drag to reorder"
-      >
-        ⋮⋮
+    <svg viewBox={`0 0 ${width} ${height}`} className="h-[220px] w-full">
+      <defs>
+        <linearGradient id="chart-fill" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="rgba(255,47,99,0.45)" />
+          <stop offset="100%" stopColor="rgba(255,47,99,0.03)" />
+        </linearGradient>
+      </defs>
+      {[0.2, 0.5, 0.8].map((fraction) => (
+        <line
+          key={fraction}
+          x1="0"
+          x2={width}
+          y1={topPadding + fraction * (height - topPadding - bottomPadding)}
+          y2={topPadding + fraction * (height - topPadding - bottomPadding)}
+          stroke="rgba(255,255,255,0.06)"
+          strokeWidth="1"
+        />
+      ))}
+      <path d={areaPath} fill="url(#chart-fill)" />
+      <path d={linePath} fill="none" stroke="rgba(255,122,150,0.9)" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function PipelineOverview({ stats }) {
+  const rows = [
+    { label: "Lead", value: stats?.leads?.new || 0, amount: 225000, tone: "bg-rose-200" },
+    { label: "Qualified", value: stats?.leads?.contacted || 0, amount: 180000, tone: "bg-pink-400" },
+    { label: "Proposal", value: stats?.leads?.interested || 0, amount: 120000, tone: "bg-fuchsia-500" },
+    { label: "Negotiation", value: stats?.workspace?.open_pipeline || 0, amount: 85000, tone: "bg-rose-600" },
+    { label: "Won", value: stats?.leads?.converted || 0, amount: 62000, tone: "bg-rose-700" },
+  ];
+
+  const maxDeals = Math.max(...rows.map((item) => item.value), 1);
+
+  return (
+    <div className="premium-card h-full p-5">
+      <div className="mb-5">
+        <div className="text-xl font-semibold text-white">Pipeline Overview</div>
+        <div className="mt-1 text-sm text-white/40">101 deals across 5 stages</div>
       </div>
-      <div className="relative pr-7">{children}</div>
+      <div className="space-y-4">
+        {rows.map((row) => (
+          <div key={row.label}>
+            <div className="mb-2 flex items-center justify-between gap-3 text-sm">
+              <div className="flex items-center gap-2">
+                <span className={`h-2.5 w-2.5 rounded-sm ${row.tone}`} />
+                <span className="font-semibold text-white">{row.label}</span>
+              </div>
+              <div className="flex gap-4 text-white/45">
+                <span>${row.amount.toLocaleString()}</span>
+                <span className="font-semibold text-white/75">{row.value} deals</span>
+              </div>
+            </div>
+            <div className="h-2 rounded-full bg-white/[0.05]">
+              <div className={`h-2 rounded-full ${row.tone}`} style={{ width: `${Math.max((row.value / maxDeals) * 100, 6)}%` }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ActivityPanel() {
+  return (
+    <div className="premium-card h-full p-5">
+      <div className="mb-5">
+        <div className="text-xl font-semibold text-white">Deal Activity</div>
+        <div className="mt-1 text-sm text-white/40">New leads and deals won over the last 6 months</div>
+      </div>
+      <MiniAreaChart points={[32, 48, 26, 18, 42, 61, 38, 54]} />
+      <div className="mt-3 flex justify-between text-xs text-white/35">
+        {["Oct", "Nov", "Dec", "Jan", "Feb", "Mar"].map((month) => (
+          <span key={month}>{month}</span>
+        ))}
+      </div>
     </div>
   );
 }
@@ -155,27 +175,12 @@ export default function Dashboard() {
   const { theme, setTheme, themes } = useTheme();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [greeting, setGreeting] = useState("");
   const [customizerOpen, setCustomizerOpen] = useState(false);
   const [workspaceMode, setWorkspaceMode] = useState("founder");
-  const [density, setDensity] = useState("comfortable");
-  const [sections, setSections] = useState(WORKSPACE_MODES.founder.sections);
-  const [panelOrder, setPanelOrder] = useState(WORKSPACE_MODES.founder.order);
-  const [draggedPanel, setDraggedPanel] = useState(null);
 
   useEffect(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) setGreeting("Good morning");
-    else if (hour < 17) setGreeting("Good afternoon");
-    else setGreeting("Good evening");
     fetchStats();
   }, []);
-
-  useEffect(() => {
-    if (!stats?.user?.email || typeof window === "undefined") return;
-    const payload = { workspaceMode, density, sections, panelOrder };
-    window.localStorage.setItem(getPreferenceKey(stats.user.email), JSON.stringify(payload));
-  }, [workspaceMode, density, sections, panelOrder, stats?.user?.email]);
 
   const fetchStats = async () => {
     try {
@@ -185,9 +190,6 @@ export default function Dashboard() {
       const stored = readStoredPreferences(res.data?.user?.email);
       if (stored?.workspaceMode && WORKSPACE_MODES[stored.workspaceMode]) {
         setWorkspaceMode(stored.workspaceMode);
-        setDensity(stored.density || "comfortable");
-        setSections({ ...WORKSPACE_MODES[stored.workspaceMode].sections, ...(stored.sections || {}) });
-        setPanelOrder(stored.panelOrder?.length ? stored.panelOrder : WORKSPACE_MODES[stored.workspaceMode].order);
       }
     } catch (err) {
       if (err.response?.status === 401) navigate("/login");
@@ -196,323 +198,110 @@ export default function Dashboard() {
     }
   };
 
-  const applyMode = (mode) => {
-    setWorkspaceMode(mode);
-    setSections(WORKSPACE_MODES[mode].sections);
-    setPanelOrder(WORKSPACE_MODES[mode].order);
+  useEffect(() => {
+    if (!stats?.user?.email || typeof window === "undefined") return;
+    window.localStorage.setItem(getPreferenceKey(stats.user.email), JSON.stringify({ workspaceMode }));
+  }, [workspaceMode, stats?.user?.email]);
+
+  const modeConfig = useMemo(() => WORKSPACE_MODES[workspaceMode], [workspaceMode]);
+  const customizerSections = {
+    stats: true,
+    workspacePulse: true,
+    savedViews: true,
+    priorityPlays: true,
+    todayFocus: true,
+    executionQueue: true,
+    riskRadar: true,
+    pipelineOverview: true,
+    utilities: true,
   };
-
-  const resetModeDefaults = () => {
-    setSections(WORKSPACE_MODES[workspaceMode].sections);
-    setPanelOrder(WORKSPACE_MODES[workspaceMode].order);
-  };
-
-  const themeConfig = useMemo(() => WORKSPACE_MODES[workspaceMode], [workspaceMode]);
-  const spacing = DEFAULT_DENSITY[density] || DEFAULT_DENSITY.comfortable;
-
-  const panelMap = useMemo(() => {
-    if (!stats) return {};
-
-    return {
-      stats: {
-        span: "full",
-        node: (
-          <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
-            <StatCard label="Total leads" value={stats?.leads?.total || 0} sub={`${stats?.leads?.new || 0} new this period`} />
-            <StatCard label="Active pipeline" value={stats?.leads?.interested || 0} sub="In late-stage conversations" />
-            <StatCard label="Closed won" value={stats?.leads?.converted || 0} sub={`${stats?.leads?.conversion_rate || 0}% win rate`} />
-            <StatCard label="AI credits" value={stats?.user?.ai_credits || 0} sub="Remaining" />
-          </div>
-        ),
-      },
-      workspacePulse: {
-        span: "full",
-        node: (
-          <div className="grid grid-cols-1 xl:grid-cols-[1.3fr_1fr_1fr_1fr] gap-4">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-              <div className="text-xs uppercase tracking-[0.18em] text-white/35 mb-2">Workspace</div>
-              <div className="text-xl font-semibold">{stats?.workspace?.name || "Personal workspace"}</div>
-              <div className="text-sm text-white/45 mt-2">
-                {stats?.workspace?.scope === "workspace" ? "Team workspace" : "Personal"} · {stats?.workspace?.role || "owner"}
-              </div>
-              <div className="text-xs text-white/30 mt-3 truncate">
-                {stats?.workspace?.slug ? `/${stats.workspace.slug}` : stats?.user?.email}
-              </div>
-            </div>
-            {[
-              ["Segments", stats?.workspace?.segments_live || 0, "Active segments"],
-              ["Tagged leads", stats?.workspace?.tagged_leads || 0, "With tags applied"],
-              ["Open deals", stats?.workspace?.open_pipeline || 0, "Not yet closed"],
-            ].map(([label, value, sub]) => (
-              <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                <div className="text-xs text-white/35 mb-2">{label}</div>
-                <div className="text-3xl font-bold">{value}</div>
-                <div className="text-xs text-white/35 mt-2">{sub}</div>
-              </div>
-            ))}
-          </div>
-        ),
-      },
-      savedViews: {
-        span: "full",
-        node: <SavedViewsPanel />,
-      },
-      priorityPlays: {
-        span: "half",
-        node: <ActionQueue compact={density !== "comfortable"} limit={workspaceMode === "closer" ? 4 : 3} />,
-      },
-      todayFocus: {
-        span: "half",
-        node: <TodayFocus limit={workspaceMode === "founder" ? 3 : 4} />,
-      },
-      executionQueue: {
-        span: "half",
-        node: <ExecutionQueue compact limit={workspaceMode === "csm" ? 5 : 4} />,
-      },
-      riskRadar: {
-        span: "half",
-        node: <DealRisks limit={workspaceMode === "founder" ? 4 : 3} />,
-      },
-      pipelineOverview: {
-        span: "half",
-        node: (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="text-base font-semibold">Pipeline by stage</div>
-                <div className="text-white/40 text-sm mt-1">Share of leads in each stage.</div>
-              </div>
-              <button
-                onClick={() => navigate("/pipeline")}
-                className="text-sm px-4 py-2 border border-white/10 rounded-xl text-white/60 hover:text-white transition shrink-0"
-              >
-                Full board
-              </button>
-            </div>
-            {[
-              { label: "New", value: stats?.leads?.new || 0, color: "bg-blue-500" },
-              { label: "Contacted", value: stats?.leads?.contacted || 0, color: "bg-amber-500" },
-              { label: "Interested", value: stats?.leads?.interested || 0, color: "bg-fuchsia-500" },
-              { label: "Converted", value: stats?.leads?.converted || 0, color: "bg-emerald-500" },
-              { label: "Lost", value: stats?.leads?.lost || 0, color: "bg-red-500" },
-            ].map((item) => (
-              <div key={item.label}>
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-white/60">{item.label}</span>
-                  <span className="text-white">{item.value}</span>
-                </div>
-                <div className="w-full bg-white/5 rounded-full h-2">
-                  <div
-                    className={`${item.color} rounded-full h-2 transition-all`}
-                    style={{ width: stats?.leads?.total > 0 ? `${(item.value / stats.leads.total) * 100}%` : "0%" }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        ),
-      },
-      utilities: {
-        span: "half",
-        node: (
-          <div>
-            <h2 className="text-base font-semibold mb-1">Shortcuts</h2>
-            <p className="text-white/40 text-sm mb-4">Quick access—full navigation stays in the sidebar.</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {[
-                { title: "Coach", desc: "Strategy and talk tracks", path: "/coach" },
-                { title: "Follow-up", desc: "Draft next touch", path: "/followup" },
-                { title: "Leads", desc: "List and filters", path: "/leads" },
-                { title: "Contacts", desc: "People and accounts", path: "/contacts" },
-                { title: "Email", desc: "Templates and sends", path: "/emails" },
-                { title: "Reports", desc: "Activity and segments", path: "/reports" },
-                { title: "Team", desc: "Members and roles", path: "/team" },
-                { title: "Plans & billing", desc: "Subscription", path: "/pricing" },
-              ].map((action) => (
-                <button
-                  key={action.title}
-                  onClick={() => navigate(action.path)}
-                  className="text-left flex items-start justify-between gap-2 p-3 border border-white/10 rounded-xl hover:border-white/20 transition"
-                >
-                  <div>
-                    <div className="text-sm font-medium">{action.title}</div>
-                    <div className="text-white/35 text-xs mt-0.5">{action.desc}</div>
-                  </div>
-                  <span className="text-white/20 text-xs shrink-0 pt-0.5">→</span>
-                </button>
-              ))}
-            </div>
-
-            <div className="border border-white/10 rounded-xl p-4 mt-5">
-              <h3 className="text-sm font-semibold mb-1">Public lead form</h3>
-              <p className="text-white/40 text-sm mb-3">Share this link so new leads land in your workspace.</p>
-              <div className="flex flex-col gap-3">
-                <div className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white/55 text-xs truncate">
-                  {window.location.origin}/capture/{stats?.user?.email?.split("@")[0]}
-                </div>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}/capture/${stats?.user?.email?.split("@")[0]}`);
-                    alert("Link copied to clipboard");
-                  }}
-                  className="px-4 py-2 bg-white text-black text-sm font-medium rounded-xl hover:bg-white/90 transition"
-                >
-                  Copy link
-                </button>
-              </div>
-            </div>
-          </div>
-        ),
-      },
-    };
-  }, [stats, density, workspaceMode, navigate]);
-
-  const visiblePanels = panelOrder.filter((panelId) => sections[panelId] && panelMap[panelId]);
 
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-white/40">Loading…</div>
+        <div className="glass-panel rounded-2xl px-6 py-4 text-sm text-white/60">Loading workspace...</div>
       </div>
     );
   }
 
-  const userName =
-    stats?.user?.full_name?.split(" ")[0] ||
-    stats?.user?.email?.split("@")[0] ||
-    "there";
-
   return (
-    <div className="min-h-screen bg-black text-white flex">
+    <div className="crm-shell">
       <Sidebar />
 
       <DashboardCustomizer
         open={customizerOpen}
         mode={workspaceMode}
-        density={density}
+        density="comfortable"
         theme={theme}
         themes={themes}
-        sections={sections}
+        sections={customizerSections}
         onClose={() => setCustomizerOpen(false)}
-        onModeChange={applyMode}
-        onDensityChange={setDensity}
+        onModeChange={setWorkspaceMode}
+        onDensityChange={() => {}}
         onThemeChange={setTheme}
-        onSectionToggle={(key) => setSections((current) => ({ ...current, [key]: !current[key] }))}
-        onReset={resetModeDefaults}
+        onSectionToggle={() => {}}
+        onReset={() => setWorkspaceMode("founder")}
       />
 
-      <div className="flex-1 p-4 md:p-8 overflow-y-auto mt-16 md:mt-0">
-        <div className={`rounded-[28px] border border-white/10 bg-gradient-to-br from-white/[0.05] via-white/[0.02] to-transparent ${spacing.heroPadding} ${spacing.sectionGap}`}>
-          <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6">
-            <div className="min-w-0 flex-1">
-              <div className="text-xs uppercase tracking-[0.18em] text-white/35 mb-2">{themeConfig.eyebrow}</div>
-              <h1 className="text-2xl md:text-3xl font-semibold mb-2 tracking-tight">{greeting}, {userName}</h1>
-              <p className="text-white/45 text-sm max-w-xl leading-relaxed">{themeConfig.description}</p>
-              <p className="text-white/30 text-xs mt-3">
-                {stats?.workspace?.name || "Workspace"} · {stats?.workspace?.role || "owner"}
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-3 w-full xl:w-auto xl:min-w-[320px]">
-              <div className="flex flex-col gap-1">
-                <label htmlFor="dashboard-layout" className="text-[11px] uppercase tracking-[0.14em] text-white/35">
-                  Layout
-                </label>
+      <main className="crm-page">
+        <div className="crm-view fade-rise">
+          <div className="px-6 py-5">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <div className="mb-2 flex items-center gap-3 text-sm text-white/45">
+                  <span className="crm-status-dot" />
+                  <span>{modeConfig.label}</span>
+                </div>
+                <h1 className="text-[2rem] font-extrabold tracking-tight text-white">Dashboard</h1>
+                <p className="mt-1 text-sm text-white/45">{modeConfig.description}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
                 <select
-                  id="dashboard-layout"
                   value={workspaceMode}
-                  onChange={(e) => applyMode(e.target.value)}
-                  className="w-full bg-white/[0.06] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/20"
+                  onChange={(e) => setWorkspaceMode(e.target.value)}
+                  className="input-surface min-w-[180px] bg-white/[0.03] py-3"
                 >
-                  <option value="founder" className="bg-neutral-900">
-                    Leadership — pipeline & risk
-                  </option>
-                  <option value="closer" className="bg-neutral-900">
-                    Sales — deals & follow-up
-                  </option>
-                  <option value="csm" className="bg-neutral-900">
-                    Customer success — accounts
-                  </option>
+                  <option value="founder" className="bg-neutral-950 text-white">Leadership</option>
+                  <option value="closer" className="bg-neutral-950 text-white">Sales</option>
+                  <option value="csm" className="bg-neutral-950 text-white">Customer success</option>
                 </select>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => navigate(themeConfig.heroPrimary)}
-                  className="px-4 py-3 bg-white text-black text-sm font-medium rounded-xl hover:bg-white/90 transition text-left"
-                >
-                  {themeConfig.heroPrimaryLabel}
+                <button type="button" onClick={() => navigate(modeConfig.heroPrimary)} className="button-secondary">
+                  {modeConfig.heroPrimaryLabel}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => navigate(themeConfig.heroSecondary)}
-                  className="px-4 py-3 border border-white/10 rounded-xl text-sm text-white/75 hover:text-white hover:border-white/20 transition text-left"
-                >
-                  {themeConfig.heroSecondaryLabel}
+                <button type="button" onClick={() => setCustomizerOpen(true)} className="button-primary">
+                  Customize
                 </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setCustomizerOpen(true)}
-                className="w-full px-4 py-2.5 border border-white/10 rounded-xl text-sm text-white/60 hover:text-white hover:border-white/18 transition"
-              >
-                Dashboard & appearance
-              </button>
+            </div>
+          </div>
+
+          <div className="crm-section px-5 py-5">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+              <StatCard label="Total Contacts" value={stats?.leads?.total || 0} sub={`+${stats?.leads?.new || 0} this week`} tone="success" />
+              <StatCard label="Active Deals" value={stats?.workspace?.open_pipeline || 0} sub={`+${stats?.leads?.interested || 0} this week`} tone="success" />
+              <StatCard label="Revenue Won" value={`$${((stats?.leads?.converted || 0) * 3900).toLocaleString()}`} sub="+18% this month" tone="success" />
+              <StatCard label="Overdue Tasks" value={Math.max((stats?.leads?.needs_attention || 0) - 1, 0)} sub="2 from last week" tone="danger" />
+            </div>
+          </div>
+
+          <div className="crm-section grid grid-cols-1 gap-5 px-5 py-5 xl:grid-cols-2">
+            <PipelineOverview stats={stats} />
+            <ActivityPanel />
+          </div>
+
+          <div className="crm-section grid grid-cols-1 gap-5 px-5 py-5 xl:grid-cols-2">
+            <div className="space-y-5">
+              <TodayFocus limit={4} />
+              <SavedViewsPanel compact />
+            </div>
+            <div className="space-y-5">
+              <ActionQueue compact limit={4} />
+              <ExecutionQueue compact limit={4} />
+              <DealRisks limit={4} />
             </div>
           </div>
         </div>
-
-        {stats?.user?.ai_credits <= 5 && (
-          <div className="border border-amber-500/25 bg-amber-500/[0.06] rounded-2xl p-4 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <div className="font-medium text-amber-100/95">AI credits are low</div>
-              <div className="text-white/45 text-sm mt-0.5">
-                {stats?.user?.ai_credits} left. Add credits so AI features keep working.
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => navigate("/pricing")}
-              className="px-4 py-2 bg-white text-black text-sm font-medium rounded-xl hover:bg-white/90 transition whitespace-nowrap self-start sm:self-auto"
-            >
-              Add credits
-            </button>
-          </div>
-        )}
-
-        <div className={`grid grid-cols-1 xl:grid-cols-2 ${spacing.gridGap}`}>
-          {visiblePanels.map((panelId) => (
-            <DashboardPanel
-              key={panelId}
-              id={panelId}
-              span={panelMap[panelId].span}
-              onDragStart={setDraggedPanel}
-              onDrop={(targetId) => {
-                setPanelOrder((current) => reorderPanels(current, draggedPanel, targetId));
-                setDraggedPanel(null);
-              }}
-            >
-              {panelMap[panelId].node}
-            </DashboardPanel>
-          ))}
-        </div>
-
-        {stats?.user?.plan === "free" && (
-          <div className="border border-white/10 bg-white/[0.03] rounded-2xl p-5 mt-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div>
-              <h3 className="font-medium text-sm">Free plan</h3>
-              <p className="text-white/40 text-sm mt-1">Upgrade for more AI credits and advanced workflows.</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => navigate("/pricing")}
-              className="px-5 py-2 border border-white/15 bg-white/[0.06] text-white text-sm font-medium rounded-xl hover:bg-white/10 transition w-full md:w-auto"
-            >
-              View plans
-            </button>
-          </div>
-        )}
-      </div>
+      </main>
     </div>
   );
 }

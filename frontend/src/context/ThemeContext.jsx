@@ -8,7 +8,7 @@ const LEGACY_KEY = "ai-sales-os:theme";
 const CRM_BOOT_KEY = "ai-sales-os:crm-layout-boot-v1";
 
 function readInitialTheme() {
-  if (typeof window === "undefined") return "enterprise";
+  if (typeof window === "undefined") return "dark";
 
   const v2 = window.localStorage.getItem(STORAGE_KEY);
   if (v2 && THEMES[v2]) return v2;
@@ -20,12 +20,12 @@ function readInitialTheme() {
   }
 
   if (!window.localStorage.getItem(CRM_BOOT_KEY)) {
-    window.localStorage.setItem(STORAGE_KEY, "enterprise");
+    window.localStorage.setItem(STORAGE_KEY, "dark");
     window.localStorage.setItem(CRM_BOOT_KEY, "1");
-    return "enterprise";
+    return "dark";
   }
 
-  return "enterprise";
+  return "dark";
 }
 
 export function ThemeProvider({ children }) {

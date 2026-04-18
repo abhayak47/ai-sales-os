@@ -1,18 +1,18 @@
 export const THEMES = {
-  enterprise: {
-    label: "CRM",
-    description: "Light enterprise layout similar to Zoho or HubSpot.",
-  },
   dark: {
-    label: "Midnight",
-    description: "High-contrast dark workspace.",
+    label: "Reference Dark",
+    description: "Dark high-density CRM inspired by the reference layouts.",
+  },
+  enterprise: {
+    label: "Dark CRM",
+    description: "The same CRM shell with default team-safe contrast.",
   },
   light: {
     label: "Canvas",
-    description: "Clean light workspace for long sessions.",
+    description: "Clean light workspace for bright environments.",
   },
   slate: {
     label: "Slate",
-    description: "Muted professional grey-blue workspace.",
+    description: "Muted blue-grey workspace with the same structure.",
   },
 };
