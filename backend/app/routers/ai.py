@@ -75,9 +75,9 @@ def _get_owned_lead(lead_id: int, user, db: Session) -> Lead:
     return lead
 
 
-def _recent_activities(lead_id: int, db: Session):
+def _recent_activities(lead_id: int, user, db: Session):
     return (
-        db.query(Activity)
+        workspace_query(db, Activity, user)
         .filter(Activity.lead_id == lead_id)
         .order_by(Activity.created_at.desc())
         .limit(10)

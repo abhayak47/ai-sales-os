@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta
 from app.database import get_db
+from app.models.organization import Organization, TeamInvite
 from app.schemas.user import UserCreate, UserResponse, Token
 from app.services.auth import (
     build_user_payload,
@@ -27,7 +28,23 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
             status_code=400,
             detail="Email already registered"
         )
-    new_user = create_user(db, user)
+
+    invite = None
+    if user.invite_token:
+        invite = db.query(TeamInvite).filter(
+            TeamInvite.token == user.invite_token,
+            TeamInvite.status == "pending",
+            TeamInvite.expires_at > datetime.utcnow()
+        ).first()
+        if not invite:
+            raise HTTPException(status_code=400, detail="Invalid or expired invite token")
+
+    new_user = create_user(db, user, invite=invite)
+
+    if invite:
+        invite.status = "accepted"
+        db.commit()
+
     return build_user_payload(db, new_user)
 
 # ── Login ────────────────────────────────────────────

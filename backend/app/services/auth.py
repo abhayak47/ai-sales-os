@@ -73,23 +73,32 @@ def build_user_payload(db: Session, user: User):
     }
 
 
-def create_user(db: Session, user: UserCreate):
+def create_user(db: Session, user: UserCreate, invite=None):
     hashed_password = hash_password(user.password)
-    workspace_name = f"{user.full_name.split()[0]}'s workspace" if user.full_name.strip() else "New workspace"
-    organization = Organization(
-        name=workspace_name,
-        slug=_unique_org_slug(db, user.full_name or user.email.split("@")[0]),
-    )
-    db.add(organization)
-    db.flush()
+
+    if invite:
+        organization_id = invite.organization_id
+        role = invite.role
+        ai_credits = 25
+    else:
+        workspace_name = f"{user.full_name.split()[0]}'s workspace" if user.full_name.strip() else "New workspace"
+        organization = Organization(
+            name=workspace_name,
+            slug=_unique_org_slug(db, user.full_name or user.email.split("@")[0]),
+        )
+        db.add(organization)
+        db.flush()
+        organization_id = organization.id
+        role = "owner"
+        ai_credits = 25
 
     db_user = User(
-        organization_id=organization.id,
+        organization_id=organization_id,
         full_name=user.full_name,
         email=user.email,
         hashed_password=hashed_password,
-        role="owner",
-        ai_credits=25,  # 25 free credits on signup
+        role=role,
+        ai_credits=ai_credits,
         is_onboarded=False,
         onboarding_step=0
     )

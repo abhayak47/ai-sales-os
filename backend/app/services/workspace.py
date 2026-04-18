@@ -2,11 +2,9 @@ from fastapi import HTTPException
 
 
 ROLE_RANK = {
-    "viewer": 0,
-    "rep": 1,
-    "manager": 2,
-    "admin": 3,
-    "owner": 4,
+    "member": 1,
+    "admin": 2,
+    "owner": 3,
 }
 
 
@@ -36,7 +34,7 @@ def require_role(user, minimum_role: str):
 
 def can_edit_lead(user, lead):
     current_role = (getattr(user, "role", None) or "owner").lower()
-    if current_role in {"owner", "admin", "manager"}:
+    if current_role in {"owner", "admin"}:
         return True
     if getattr(lead, "owner_user_id", None) == user.id:
         return True

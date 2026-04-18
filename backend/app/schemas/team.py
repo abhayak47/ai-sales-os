@@ -29,3 +29,19 @@ class TeamMemberResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class TeamInviteCreate(BaseModel):
+    email: EmailStr
+    role: str = "member"
+
+
+class TeamInviteResponse(BaseModel):
+    id: int
+    email: str
+    role: str
+    status: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
